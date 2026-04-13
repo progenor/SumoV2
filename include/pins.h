@@ -11,6 +11,8 @@
 #define PWM_B2 21  // GP21 controls Driver B IN2
 #define N_SLEEP 22 // GP22 controls both drivers' nSLEEP pins
 
+#define INT_A 27
+
 // Buzzer Pin
 #define BUZZER 2
 

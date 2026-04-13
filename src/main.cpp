@@ -1,7 +1,10 @@
 #include <Arduino.h>
+#include "expander.h"
 #include "pins.h"
 #include "melody.h"
 #include "display.h"
+#include "IMU.h"
+
 #define ENM1 11
 #define ENM2 12
 #define PWM1 13
@@ -10,12 +13,19 @@
 #define DIR2 15
 
 Display display;
+IMU imu;
+
+Adafruit_MCP23X17 mcp;
 void setup()
 {
 
   display.setup();
   display.drawLoadingScreen();
+  imu.begin();
 
+  setupExpander();
+
+  delay(100);
   pinMode(ENM1, OUTPUT);
   pinMode(ENM2, OUTPUT);
   pinMode(PWM1, OUTPUT);
@@ -41,20 +51,31 @@ void setup()
 
 void loop()
 {
+  imu.read();
+  imu.printData();
   display.print("Zsolt Buzi", 42.0);
-  analogWrite(PWM1, 128);
-  // analogWrite(PWM2, 128);
-  digitalWrite(ENM1, HIGH);
-  // digitalWrite(ENM2, LOW);
-  delay(1000);
-  analogWrite(PWM1, 50);
-  // analogWrite(PWM2, 50);
+  int KeypadNum = checkExpanderInterrupt();
+  if (KeypadNum != -1)
+  {
+    // Serial.print("Keypad: ");
+    // Serial.println(KeypadNum);
+    display.print("Key: ", KeypadNum);
+    delay(200);
+  }
+  // analogWrite(PWM1, 128);
+  // // analogWrite(PWM2, 128);
   // digitalWrite(ENM1, HIGH);
-  // digitalWrite(ENM2, HIGH);
-  delay(1000);
+  // // digitalWrite(ENM2, LOW);
+  // delay(1000);
   // analogWrite(PWM1, 50);
-  // analogWrite(PWM2, 50);
-  digitalWrite(ENM1, LOW);
-  // digitalWrite(ENM2, HIGH);
-  delay(1000);
+  // // analogWrite(PWM2, 50);
+  // // digitalWrite(ENM1, HIGH);
+  // // digitalWrite(ENM2, HIGH);
+  // delay(1000);
+  // // analogWrite(PWM1, 50);
+  // // analogWrite(PWM2, 50);
+  // digitalWrite(ENM1, LOW);
+  // // digitalWrite(ENM2, HIGH);
+  // delay(1000);
+  delay(10);
 }

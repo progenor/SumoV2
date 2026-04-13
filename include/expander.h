@@ -2,6 +2,7 @@
 #define EXPANDER_H
 
 #include "defines.h"
+#include "pins.h"
 #include <Arduino.h>
 #include <Adafruit_MCP23X17.h>
 

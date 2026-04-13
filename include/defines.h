@@ -30,4 +30,18 @@ struct SpeedConfig
 // Global speed configuration (can be modified at runtime)
 extern SpeedConfig speedConfig;
 
+// IO Expander
+#define IO_ADDRESS 0x22
+
+enum Keypad
+{
+    BTN0 = 0,
+    BTN1 = 1,
+    Key1 = 4,
+    Key2 = 5,
+    Key3 = 2,
+    Key4 = 3,
+
+};
+
 #endif // DEFINES_H
