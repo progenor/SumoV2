@@ -48,9 +48,8 @@ This document captures the current whole-PCB wiring map reflected in firmware.
 ## Temperature Monitor Network
 
 - Net: TM1 -> Pico GP26 (ADC0)
-- Current firmware conversion defaults to TMP36-style transfer:
-  - Temp(C) = (Vtm1 - 0.5) / 0.01
-- If TM1 sensor uses a different transfer function, update:
-  - TEMP_SENSOR_VOLTAGE_OFFSET
-  - TEMP_SENSOR_V_PER_C
-    in include/defines.h
+- Sensor type: 10k NTC thermistor, B = 3950
+- Conversion model used by firmware:
+  - Rntc = Rpullup * Vadc / (Vpullup - Vadc)
+  - 1/T = 1/T0 + (1/B) * ln(Rntc/R0)
+  - Where Rpullup = 10k, Vpullup = 5V, R0 = 10k, T0 = 25C + 273.15K

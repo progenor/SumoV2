@@ -298,8 +298,15 @@ void Display::drawTemperatureScreen(float temperatureC, float sensorVoltage)
 
     display.setTextSize(2);
     display.setCursor(0, 18);
-    display.print(temperatureC, 1);
-    display.print(" C");
+    if (isnan(temperatureC))
+    {
+        display.print("N/A");
+    }
+    else
+    {
+        display.print(temperatureC, 1);
+        display.print(" C");
+    }
 
     display.setTextSize(1);
     display.setCursor(0, 50);

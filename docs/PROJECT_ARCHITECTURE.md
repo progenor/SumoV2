@@ -60,7 +60,7 @@ flowchart TD
 - `MODE_PAUSED`: motors are stopped.
 - `MODE_RUNNING`: active behavior loop (ready for expansion).
 - Includes a dedicated battery voltage menu screen (`MENU_SCREEN_BATTERY`).
-- Includes a dedicated temperature menu screen (`MENU_SCREEN_TEMP`, source: `TM1` pin).
+- Includes a dedicated temperature menu screen (`MENU_SCREEN_TEMP`, source: `TM1` 10k NTC divider).
 
 ## Pin Policy
 

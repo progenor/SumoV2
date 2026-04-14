@@ -9,9 +9,12 @@
 #define display_RESET -1
 #define DISPLAY_REFRESH_MS 30 // Display refresh throttle (milliseconds) ~33 FPS
 
-// TM1 temperature monitor conversion (TMP36-style default)
-#define TEMP_SENSOR_VOLTAGE_OFFSET 0.5f
-#define TEMP_SENSOR_V_PER_C 0.01f
+// TM1 temperature monitor conversion (10k NTC, B=3950)
+#define TEMP_NTC_PULLUP_VOLTAGE 5.0f
+#define TEMP_NTC_PULLUP_RESISTANCE 10000.0f
+#define TEMP_NTC_R25 10000.0f
+#define TEMP_NTC_BETA 3950.0f
+#define TEMP_NTC_REFERENCE_TEMP_C 25.0f
 
 // Battery monitor calibration factor.
 // Two-point fit from measured values:

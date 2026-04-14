@@ -1,5 +1,6 @@
 #include "robot.h"
 #include "pins.h"
+#include <math.h>
 
 SpeedConfig speedConfig;
 
@@ -540,7 +541,26 @@ float Robot::getTemperatureVoltage()
 float Robot::getTemperatureC()
 {
     float voltage = getTemperatureVoltage();
-    return (voltage - TEMP_SENSOR_VOLTAGE_OFFSET) / TEMP_SENSOR_V_PER_C;
+
+    if (!isfinite(voltage) || voltage <= 0.0f || voltage >= (TEMP_NTC_PULLUP_VOLTAGE - 0.01f))
+    {
+        return NAN;
+    }
+
+    float resistance = TEMP_NTC_PULLUP_RESISTANCE * voltage / (TEMP_NTC_PULLUP_VOLTAGE - voltage);
+    if (!isfinite(resistance) || resistance <= 0.0f)
+    {
+        return NAN;
+    }
+
+    const float referenceKelvin = TEMP_NTC_REFERENCE_TEMP_C + 273.15f;
+    float invTemperature = (1.0f / referenceKelvin) + (1.0f / TEMP_NTC_BETA) * logf(resistance / TEMP_NTC_R25);
+    if (!isfinite(invTemperature) || invTemperature <= 0.0f)
+    {
+        return NAN;
+    }
+
+    return (1.0f / invTemperature) - 273.15f;
 }
 
 void Robot::cycleMenuScreenBackward()
