@@ -1,8 +1,8 @@
 #include "motors.h"
 
-const float R_IPROPI = 1000.0f;
-const float A_IPROPI = 3075.0f;
 const float V_REF = 3.3f;
+const float CS_OFFSET_V = 0.050f;
+const float CS_SENSITIVITY_V_PER_A = 0.020f;
 
 const float Motor::ALPHA_FILTER = 0.97f;
 
@@ -71,14 +71,16 @@ float Motor::readMotorCurrent()
 {
     int rawADC = analogRead(IPROPI_A_PIN);
     float voltage = (rawADC / 4095.0f) * V_REF;
-    return (voltage / R_IPROPI) * A_IPROPI;
+    float current = (voltage - CS_OFFSET_V) / CS_SENSITIVITY_V_PER_A;
+    return current > 0.0f ? current : 0.0f;
 }
 
 float Motor::readMotorBCurrent()
 {
     int rawADC = analogRead(IPROPI_B_PIN);
     float voltage = (rawADC / 4095.0f) * V_REF;
-    return (voltage / R_IPROPI) * A_IPROPI;
+    float current = (voltage - CS_OFFSET_V) / CS_SENSITIVITY_V_PER_A;
+    return current > 0.0f ? current : 0.0f;
 }
 
 float Motor::getFilteredMotorCurrent()

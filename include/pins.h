@@ -28,6 +28,9 @@
 #define IPROPI_A_PIN 26 // GP26 ADC input for motor A current sensing
 #define IPROPI_B_PIN 28 // GP28 ADC input for motor B current sensing
 
+// Battery level monitor divider output (TPVLevel)
+#define BATTERY_LEVEL_PIN 28 // GP29 ADC input
+
 // IR Sensor Pins
 #define SENSOR_LEFT 13
 #define SENSOR_CENTER 14

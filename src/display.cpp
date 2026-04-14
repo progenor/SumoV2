@@ -319,3 +319,36 @@ void Display::drawSpeedSelectorScreen(int currentSpeedLevel)
 
     display.display();
 }
+
+void Display::drawBatteryVoltageScreen(float batteryVoltage)
+{
+    if (!shouldUpdate())
+        return;
+
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextWrap(false);
+
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.print("BATTERY");
+
+    display.setTextSize(2);
+    display.setCursor(0, 22);
+    display.print(batteryVoltage, 2);
+    display.print(" V");
+
+    float percent = ((batteryVoltage - 10.0f) / (12.6f - 10.0f)) * 100.0f;
+    if (percent < 0.0f)
+        percent = 0.0f;
+    if (percent > 100.0f)
+        percent = 100.0f;
+
+    display.setTextSize(1);
+    display.setCursor(0, 52);
+    display.print("~");
+    display.print(percent, 0);
+    display.print("% (3S)");
+
+    display.display();
+}

@@ -2,16 +2,37 @@
 
 ## Control Mapping (Current)
 
-- Keypad key 1 (MCP pin 4): cycle menu screen
-- Keypad key 2 (MCP pin 5): cycle speed (on speed screen) or strategy (on strategy screen)
-- Keypad key 3 (MCP pin 2): pause/resume
-- Keypad key 4 (MCP pin 3): currently unassigned
+- Vim-style keypad mode (`h j k l`):
+- `h` (MCP pin 4): previous menu screen
+- `l` (MCP pin 3): next menu screen
+- `j` (MCP pin 5): decrease selected value (speed/strategy)
+- `k` (MCP pin 2): increase selected value (speed/strategy)
 
 Other MCP23X17 channels are treated as expander inputs, not keypad keys:
 
 - MCP pin 1: `INPUT_IR6_PIN`
 - MCP pin 6: `INPUT_CS_1_PIN`
 - MCP pin 7: `INPUT_CS_2_PIN`
+
+## Current Sense Formula (Pololu 2995)
+
+Current now uses the CS transfer function from the Pololu G2 24v21 page:
+
+- `Vcs ~= 0.020 * I + 0.050` (V)
+- `I = max(0, (Vcs - 0.050) / 0.020)`
+
+Where `Vcs` is the ADC-converted CS pin voltage.
+
+## Battery Voltage Formula
+
+Battery monitor divider from schematic:
+
+- top resistor `R25 = 56k`
+- bottom resistor `R26 = 10k`
+- `Vadc = Vbat * (10 / 66)`
+- `Vbat = Vadc * 6.6`
+
+The battery menu screen displays live voltage and an approximate 3S percentage at `MENU_SCREEN_BATTERY`.
 
 ## Strategy List
 

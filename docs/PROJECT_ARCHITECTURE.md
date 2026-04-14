@@ -36,8 +36,8 @@ sequenceDiagram
 
     loop every ~5 ms
         A->>B: update()
-        B-->>A: gesture
-        A->>R: handleButtonGesture(gesture)
+        B-->>A: keypad action (h/j/k/l)
+        A->>R: handleKeypadAction(action)
         A->>R: update()
         A->>R: render menu/running screen
     end
@@ -59,6 +59,7 @@ flowchart TD
 - `MODE_MENU`: user navigates screens and changes speed/strategy.
 - `MODE_PAUSED`: motors are stopped.
 - `MODE_RUNNING`: active behavior loop (ready for expansion).
+- Includes a dedicated battery voltage menu screen (`MENU_SCREEN_BATTERY`).
 
 ## Pin Policy
 

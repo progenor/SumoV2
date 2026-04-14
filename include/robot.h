@@ -45,7 +45,9 @@ public:
 
     int getCurrentDirection() const;
 
-    void handleButtonGesture(ButtonGesture gesture);
+    void handleKeypadAction(KeypadAction action);
+
+    float getBatteryVoltage();
 
 private:
     Motor motor;
@@ -68,6 +70,9 @@ private:
     void updateBehavior_IMUHold();
 
     void applySpeedPreset(int level);
+    void cycleMenuScreenBackward();
+    void cycleSpeedLevelBackward();
+    void cycleStrategyBackward();
 };
 
 #endif // ROBOT_H

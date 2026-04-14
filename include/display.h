@@ -54,6 +54,7 @@ public:
     void drawStatusScreen(RobotMode mode, bool isPaused, int currentScreen);
     void drawStrategySelectorScreen(int currentStrategy);
     void drawDirectionIndicatorScreen(int motorDirection);
+    void drawBatteryVoltageScreen(float batteryVoltage);
 
 private:
     Adafruit_SSD1306 display;

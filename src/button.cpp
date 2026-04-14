@@ -5,7 +5,7 @@
 #define BUTTON_EVENT_DEBOUNCE_MS 80
 
 ButtonManager::ButtonManager()
-    : detectedGesture(GESTURE_NONE),
+    : detectedAction(KEYPAD_ACTION_NONE),
       lastEventMs(0)
 {
 }
@@ -29,32 +29,34 @@ void ButtonManager::update()
         return;
     }
 
-    ButtonGesture gesture = mapExpanderPinToGesture(pin);
-    if (gesture != GESTURE_NONE)
+    KeypadAction action = mapExpanderPinToAction(pin);
+    if (action != KEYPAD_ACTION_NONE)
     {
-        detectedGesture = gesture;
+        detectedAction = action;
         lastEventMs = now;
     }
 }
 
-ButtonGesture ButtonManager::mapExpanderPinToGesture(int pin)
+KeypadAction ButtonManager::mapExpanderPinToAction(int pin)
 {
     switch (pin)
     {
-    case KEYPAD_KEY_1_PIN:
-        return GESTURE_SINGLE_PRESS;
-    case KEYPAD_KEY_2_PIN:
-        return GESTURE_DOUBLE_PRESS;
-    case KEYPAD_KEY_3_PIN:
-        return GESTURE_LONG_PRESS;
+    case KEYPAD_VIM_H_PIN:
+        return KEYPAD_ACTION_H;
+    case KEYPAD_VIM_J_PIN:
+        return KEYPAD_ACTION_J;
+    case KEYPAD_VIM_K_PIN:
+        return KEYPAD_ACTION_K;
+    case KEYPAD_VIM_L_PIN:
+        return KEYPAD_ACTION_L;
     default:
-        return GESTURE_NONE;
+        return KEYPAD_ACTION_NONE;
     }
 }
 
-ButtonGesture ButtonManager::getGesture()
+KeypadAction ButtonManager::getAction()
 {
-    ButtonGesture gesture = detectedGesture;
-    detectedGesture = GESTURE_NONE;
-    return gesture;
+    KeypadAction action = detectedAction;
+    detectedAction = KEYPAD_ACTION_NONE;
+    return action;
 }

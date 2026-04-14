@@ -216,18 +216,36 @@ void Robot::updateBehavior()
     }
 }
 
-void Robot::handleButtonGesture(ButtonGesture gesture)
+void Robot::handleKeypadAction(KeypadAction action)
 {
-    switch (gesture)
+    switch (action)
     {
-    case GESTURE_SINGLE_PRESS:
+    case KEYPAD_ACTION_H:
+        if (currentMode == MODE_MENU)
+        {
+            cycleMenuScreenBackward();
+        }
+        break;
+
+    case KEYPAD_ACTION_L:
         if (currentMode == MODE_MENU)
         {
             cycleMenuScreen();
         }
         break;
 
-    case GESTURE_DOUBLE_PRESS:
+    case KEYPAD_ACTION_J:
+        if (currentMenuScreen == MENU_SCREEN_SPEED)
+        {
+            cycleSpeedLevelBackward();
+        }
+        else if (currentMenuScreen == MENU_SCREEN_STRATEGY)
+        {
+            cycleStrategyBackward();
+        }
+        break;
+
+    case KEYPAD_ACTION_K:
         if (currentMenuScreen == MENU_SCREEN_SPEED)
         {
             cycleSpeedLevel();
@@ -238,11 +256,7 @@ void Robot::handleButtonGesture(ButtonGesture gesture)
         }
         break;
 
-    case GESTURE_LONG_PRESS:
-        togglePause();
-        break;
-
-    case GESTURE_NONE:
+    case KEYPAD_ACTION_NONE:
     default:
         break;
     }
@@ -360,4 +374,36 @@ void Robot::cycleStrategy()
 int Robot::getCurrentDirection() const
 {
     return currentMotorDirection;
+}
+
+float Robot::getBatteryVoltage()
+{
+    // Divider: R25=56k (top), R26=10k (bottom), Vadc = Vbat * (10 / 66)
+    const float dividerScale = (56.0f + 10.0f) / 10.0f; // 6.6
+
+    const int sampleCount = 8;
+    int sum = 0;
+    for (int i = 0; i < sampleCount; i++)
+    {
+        sum += analogRead(BATTERY_LEVEL_PIN);
+    }
+
+    float rawAdc = static_cast<float>(sum) / sampleCount;
+    float vAdc = (rawAdc / 4095.0f) * 3.3f;
+    return vAdc * dividerScale;
+}
+
+void Robot::cycleMenuScreenBackward()
+{
+    currentMenuScreen = (currentMenuScreen + MENU_SCREEN_COUNT - 1) % MENU_SCREEN_COUNT;
+}
+
+void Robot::cycleSpeedLevelBackward()
+{
+    setSpeedLevel((currentSpeedLevel + SPEED_LEVEL_COUNT - 1) % SPEED_LEVEL_COUNT);
+}
+
+void Robot::cycleStrategyBackward()
+{
+    setStrategy((currentStrategy + STRATEGY_COUNT - 1) % STRATEGY_COUNT);
 }

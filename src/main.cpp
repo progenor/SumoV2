@@ -16,10 +16,10 @@ void setup()
 void loop()
 {
   buttonManager.update();
-  ButtonGesture gesture = buttonManager.getGesture();
-  if (gesture != GESTURE_NONE)
+  KeypadAction action = buttonManager.getAction();
+  if (action != KEYPAD_ACTION_NONE)
   {
-    robot.handleButtonGesture(gesture);
+    robot.handleKeypadAction(action);
   }
 
   robot.update();
@@ -63,6 +63,9 @@ void loop()
       break;
     case MENU_SCREEN_DIRECTION:
       robot.getDisplay().drawDirectionIndicatorScreen(robot.getCurrentDirection());
+      break;
+    case MENU_SCREEN_BATTERY:
+      robot.getDisplay().drawBatteryVoltageScreen(robot.getBatteryVoltage());
       break;
     default:
       robot.getDisplay().drawMainScreen();
