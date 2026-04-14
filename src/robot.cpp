@@ -9,13 +9,13 @@ Robot::Robot()
       paused(false),
       currentSpeedLevel(SPEED_LEVEL_LOW),
       currentStrategy(STRATEGY_SPEED),
-    currentMotorDirection(DIRECTION_STOP),
-    buzzerMode(BUZZER_MODE_IDLE),
-    buzzerOutputOn(false),
-    batterySampleValid(false),
-    lastBatteryVoltage(0.0f),
-    buzzerLastToggleMs(0),
-    buzzerTransitionsRemaining(0)
+      currentMotorDirection(DIRECTION_STOP),
+      buzzerMode(BUZZER_MODE_IDLE),
+      buzzerOutputOn(false),
+      batterySampleValid(false),
+      lastBatteryVoltage(0.0f),
+      buzzerLastToggleMs(0),
+      buzzerTransitionsRemaining(0)
 {
 }
 
@@ -100,10 +100,19 @@ void Robot::stopBuzzerAlarm()
 
 void Robot::updateBatteryBuzzer()
 {
+    const float usbFloorV = 6.0f;
     const float warningThresholdV = 12.3f;
     const float criticalThresholdV = 11.4f;
 
     float currentBatteryV = getBatteryVoltage();
+
+    if (currentBatteryV < usbFloorV)
+    {
+        stopBuzzerAlarm();
+        batterySampleValid = false;
+        lastBatteryVoltage = currentBatteryV;
+        return;
+    }
 
     if (!batterySampleValid)
     {

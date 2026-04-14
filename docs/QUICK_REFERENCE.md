@@ -36,6 +36,7 @@ The battery menu screen displays live voltage and an approximate 3S percentage a
 
 ## Battery Buzzer Alerts
 
+- Below `6.0V`: buzzer alerts are disabled and reset, so USB power does not trigger warnings.
 - Below `12.3V`: warning pattern of `3` beeps, each `500ms`.
 - Below `11.4V`: continuous buzzer alarm.
 
