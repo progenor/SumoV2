@@ -48,6 +48,8 @@ public:
     void handleKeypadAction(KeypadAction action);
 
     float getBatteryVoltage();
+    float getTemperatureVoltage();
+    float getTemperatureC();
 
 private:
     Motor motor;

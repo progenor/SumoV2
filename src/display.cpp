@@ -352,3 +352,30 @@ void Display::drawBatteryVoltageScreen(float batteryVoltage)
 
     display.display();
 }
+
+void Display::drawTemperatureScreen(float temperatureC, float sensorVoltage)
+{
+    if (!shouldUpdate())
+        return;
+
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextWrap(false);
+
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.print("TEMP (TM1)");
+
+    display.setTextSize(2);
+    display.setCursor(0, 18);
+    display.print(temperatureC, 1);
+    display.print(" C");
+
+    display.setTextSize(1);
+    display.setCursor(0, 50);
+    display.print("ADC: ");
+    display.print(sensorVoltage, 3);
+    display.print(" V");
+
+    display.display();
+}

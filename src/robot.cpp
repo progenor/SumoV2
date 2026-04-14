@@ -393,6 +393,25 @@ float Robot::getBatteryVoltage()
     return vAdc * dividerScale;
 }
 
+float Robot::getTemperatureVoltage()
+{
+    const int sampleCount = 8;
+    int sum = 0;
+    for (int i = 0; i < sampleCount; i++)
+    {
+        sum += analogRead(TEMP_MONITOR_PIN);
+    }
+
+    float rawAdc = static_cast<float>(sum) / sampleCount;
+    return (rawAdc / 4095.0f) * 3.3f;
+}
+
+float Robot::getTemperatureC()
+{
+    float voltage = getTemperatureVoltage();
+    return (voltage - TEMP_SENSOR_VOLTAGE_OFFSET) / TEMP_SENSOR_V_PER_C;
+}
+
 void Robot::cycleMenuScreenBackward()
 {
     currentMenuScreen = (currentMenuScreen + MENU_SCREEN_COUNT - 1) % MENU_SCREEN_COUNT;

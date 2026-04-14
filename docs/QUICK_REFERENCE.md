@@ -34,6 +34,16 @@ Battery monitor divider from schematic:
 
 The battery menu screen displays live voltage and an approximate 3S percentage at `MENU_SCREEN_BATTERY`.
 
+## Temperature Screen
+
+- Temperature monitor net `TM1` is sampled on Pico `GP26` (`TEMP_MONITOR_PIN`).
+- Menu screen: `MENU_SCREEN_TEMP`.
+- Display shows estimated `C` and raw TM1 voltage.
+
+## Full PCB Mapping
+
+See `docs/PCB_SCHEMATIC_MAP.md` for the consolidated whole-board net map.
+
 ## Strategy List
 
 - `STING`: center sensor has priority for direct attack.

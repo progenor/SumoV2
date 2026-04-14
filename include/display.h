@@ -55,6 +55,7 @@ public:
     void drawStrategySelectorScreen(int currentStrategy);
     void drawDirectionIndicatorScreen(int motorDirection);
     void drawBatteryVoltageScreen(float batteryVoltage);
+    void drawTemperatureScreen(float temperatureC, float sensorVoltage);
 
 private:
     Adafruit_SSD1306 display;

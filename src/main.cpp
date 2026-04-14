@@ -67,6 +67,9 @@ void loop()
     case MENU_SCREEN_BATTERY:
       robot.getDisplay().drawBatteryVoltageScreen(robot.getBatteryVoltage());
       break;
+    case MENU_SCREEN_TEMP:
+      robot.getDisplay().drawTemperatureScreen(robot.getTemperatureC(), robot.getTemperatureVoltage());
+      break;
     default:
       robot.getDisplay().drawMainScreen();
       break;

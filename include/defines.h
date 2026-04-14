@@ -9,6 +9,10 @@
 #define display_RESET -1
 #define DISPLAY_REFRESH_MS 30 // Display refresh throttle (milliseconds) ~33 FPS
 
+// TM1 temperature monitor conversion (TMP36-style default)
+#define TEMP_SENSOR_VOLTAGE_OFFSET 0.5f
+#define TEMP_SENSOR_V_PER_C 0.01f
+
 // --- Speed Configuration Structure ---
 // These are runtime-mutable values, can be changed from menu
 struct SpeedConfig

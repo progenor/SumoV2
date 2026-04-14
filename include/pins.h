@@ -31,6 +31,9 @@
 // Battery level monitor divider output (TPVLevel)
 #define BATTERY_LEVEL_PIN 28 // GP28 ADC input
 
+// Temperature monitor net from schematic (TM1)
+#define TEMP_MONITOR_PIN 26 // GP26 ADC input (A0)
+
 // IR nets from schematic
 #define IR1_PIN 6
 #define IR2_PIN 7

@@ -60,6 +60,7 @@ flowchart TD
 - `MODE_PAUSED`: motors are stopped.
 - `MODE_RUNNING`: active behavior loop (ready for expansion).
 - Includes a dedicated battery voltage menu screen (`MENU_SCREEN_BATTERY`).
+- Includes a dedicated temperature menu screen (`MENU_SCREEN_TEMP`, source: `TM1` pin).
 
 ## Pin Policy
 
@@ -69,3 +70,7 @@ This repo keeps mixed-valid mapping on purpose:
 - Legacy `PWM_Ax/PWM_Bx/N_SLEEP` defines are kept in `pins.h` for compatibility and future profile switching.
 - Expander channels are modeled as generic pins (`EXP_PIN_0..EXP_PIN_7`) with explicit keypad aliases in `defines.h`.
 - Current sense lines (`CS_1`, `CS_2`) are read through the MCP23017 expander inputs, not direct Pico ADC pins.
+
+## Full PCB Docs
+
+The full net mapping used by firmware is documented in `docs/PCB_SCHEMATIC_MAP.md`.
