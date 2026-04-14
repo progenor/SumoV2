@@ -9,7 +9,13 @@ Robot::Robot()
       paused(false),
       currentSpeedLevel(SPEED_LEVEL_LOW),
       currentStrategy(STRATEGY_SPEED),
-      currentMotorDirection(DIRECTION_STOP)
+    currentMotorDirection(DIRECTION_STOP),
+    buzzerMode(BUZZER_MODE_IDLE),
+    buzzerOutputOn(false),
+    batterySampleValid(false),
+    lastBatteryVoltage(0.0f),
+    buzzerLastToggleMs(0),
+    buzzerTransitionsRemaining(0)
 {
 }
 
@@ -42,11 +48,109 @@ void Robot::update()
 
     motor.updatePeaks();
     updateBehavior();
+    updateBatteryBuzzer();
 
     if (currentMode != MODE_MENU)
     {
         display.displayIR(getIRValues(), IRCount);
     }
+}
+
+void Robot::setBuzzerOutput(bool on)
+{
+    if (on == buzzerOutputOn)
+    {
+        return;
+    }
+
+    if (on)
+    {
+        tone(BUZZER, 2200);
+    }
+    else
+    {
+        noTone(BUZZER);
+    }
+    buzzerOutputOn = on;
+}
+
+void Robot::startWarningPattern()
+{
+    buzzerMode = BUZZER_MODE_WARN_PATTERN;
+    // Start ON immediately, then do 5 transitions every 500ms:
+    // ON->OFF->ON->OFF->ON->OFF  => 3 beeps, each 500ms.
+    buzzerTransitionsRemaining = 5;
+    buzzerLastToggleMs = millis();
+    setBuzzerOutput(true);
+}
+
+void Robot::startContinuousAlarm()
+{
+    buzzerMode = BUZZER_MODE_CONTINUOUS;
+    buzzerTransitionsRemaining = 0;
+    setBuzzerOutput(true);
+}
+
+void Robot::stopBuzzerAlarm()
+{
+    buzzerMode = BUZZER_MODE_IDLE;
+    buzzerTransitionsRemaining = 0;
+    setBuzzerOutput(false);
+}
+
+void Robot::updateBatteryBuzzer()
+{
+    const float warningThresholdV = 12.3f;
+    const float criticalThresholdV = 11.4f;
+
+    float currentBatteryV = getBatteryVoltage();
+
+    if (!batterySampleValid)
+    {
+        batterySampleValid = true;
+        lastBatteryVoltage = currentBatteryV;
+        return;
+    }
+
+    bool crossedBelowWarning = (lastBatteryVoltage >= warningThresholdV) && (currentBatteryV < warningThresholdV);
+
+    if (currentBatteryV < criticalThresholdV)
+    {
+        if (buzzerMode != BUZZER_MODE_CONTINUOUS)
+        {
+            startContinuousAlarm();
+        }
+    }
+    else
+    {
+        if (buzzerMode == BUZZER_MODE_CONTINUOUS)
+        {
+            stopBuzzerAlarm();
+        }
+
+        if (crossedBelowWarning && buzzerMode == BUZZER_MODE_IDLE)
+        {
+            startWarningPattern();
+        }
+    }
+
+    if (buzzerMode == BUZZER_MODE_WARN_PATTERN)
+    {
+        unsigned long now = millis();
+        if ((now - buzzerLastToggleMs) >= 500)
+        {
+            buzzerLastToggleMs = now;
+            setBuzzerOutput(!buzzerOutputOn);
+            buzzerTransitionsRemaining--;
+
+            if (buzzerTransitionsRemaining <= 0)
+            {
+                stopBuzzerAlarm();
+            }
+        }
+    }
+
+    lastBatteryVoltage = currentBatteryV;
 }
 
 void Robot::updateBehavior_Speed()

@@ -55,6 +55,13 @@ public:
     float getTemperatureC();
 
 private:
+    enum BuzzerMode
+    {
+        BUZZER_MODE_IDLE,
+        BUZZER_MODE_WARN_PATTERN,
+        BUZZER_MODE_CONTINUOUS
+    };
+
     Motor motor;
     Display display;
     IRSensors irSensors;
@@ -68,6 +75,13 @@ private:
     int currentStrategy;
     int currentMotorDirection;
 
+    BuzzerMode buzzerMode;
+    bool buzzerOutputOn;
+    bool batterySampleValid;
+    float lastBatteryVoltage;
+    unsigned long buzzerLastToggleMs;
+    int buzzerTransitionsRemaining;
+
     void updateBehavior();
     void updateBehavior_Speed();
     void updateBehavior_Sting();
@@ -78,6 +92,12 @@ private:
     void cycleMenuScreenBackward();
     void cycleSpeedLevelBackward();
     void cycleStrategyBackward();
+
+    void updateBatteryBuzzer();
+    void setBuzzerOutput(bool on);
+    void startWarningPattern();
+    void startContinuousAlarm();
+    void stopBuzzerAlarm();
 };
 
 #endif // ROBOT_H

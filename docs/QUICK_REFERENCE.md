@@ -34,6 +34,11 @@ Battery monitor divider from schematic:
 
 The battery menu screen displays live voltage and an approximate 3S percentage at `MENU_SCREEN_BATTERY`.
 
+## Battery Buzzer Alerts
+
+- Below `12.3V`: warning pattern of `3` beeps, each `500ms`.
+- Below `11.4V`: continuous buzzer alarm.
+
 ## Temperature Screen
 
 - Temperature monitor net `TM1` is sampled on Pico `GP26` (`TEMP_MONITOR_PIN`).
