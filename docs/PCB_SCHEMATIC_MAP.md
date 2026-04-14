@@ -50,6 +50,6 @@ This document captures the current whole-PCB wiring map reflected in firmware.
 - Net: TM1 -> Pico GP26 (ADC0)
 - Sensor type: 10k NTC thermistor, B = 3950
 - Conversion model used by firmware:
-  - Rntc = Rpullup * Vadc / (Vpullup - Vadc)
-  - 1/T = 1/T0 + (1/B) * ln(Rntc/R0)
+  - Rntc = Rpullup \* Vadc / (Vpullup - Vadc)
+  - 1/T = 1/T0 + (1/B) \* ln(Rntc/R0)
   - Where Rpullup = 10k, Vpullup = 5V, R0 = 10k, T0 = 25C + 273.15K
