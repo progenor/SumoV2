@@ -1,81 +1,74 @@
 #include <Arduino.h>
-#include "expander.h"
-#include "pins.h"
-#include "melody.h"
-#include "display.h"
-#include "IMU.h"
+#include "robot.h"
+#include "button.h"
+#include "menu.h"
+#include "ir.h"
 
-#define ENM1 11
-#define ENM2 12
-#define PWM1 13
-#define PWM2 14
-#define DIR1 3
-#define DIR2 15
+Robot robot;
+ButtonManager buttonManager;
 
-Display display;
-IMU imu;
-
-Adafruit_MCP23X17 mcp;
 void setup()
 {
-
-  display.setup();
-  display.drawLoadingScreen();
-  imu.begin();
-
-  setupExpander();
-
-  delay(100);
-  pinMode(ENM1, OUTPUT);
-  pinMode(ENM2, OUTPUT);
-  pinMode(PWM1, OUTPUT);
-  pinMode(PWM2, OUTPUT);
-  pinMode(DIR1, OUTPUT);
-  pinMode(DIR2, OUTPUT);
-  pinMode(BUZZER, OUTPUT);
-
-  digitalWrite(ENM1, HIGH);
-  digitalWrite(ENM2, HIGH);
-
-  digitalWrite(DIR1, LOW);
-  digitalWrite(DIR2, LOW);
-
-  digitalWrite(BUZZER, HIGH);
-  delay(200);
-  digitalWrite(BUZZER, LOW);
-
-  playMelody();
-  delay(500);
-  digitalWrite(DIR1, HIGH);
+  robot.setup();
+  buttonManager.setup();
 }
 
 void loop()
 {
-  imu.read();
-  imu.printData();
-  display.print("Zsolt Buzi", 42.0);
-  int KeypadNum = checkExpanderInterrupt();
-  if (KeypadNum != -1)
+  buttonManager.update();
+  ButtonGesture gesture = buttonManager.getGesture();
+  if (gesture != GESTURE_NONE)
   {
-    // Serial.print("Keypad: ");
-    // Serial.println(KeypadNum);
-    display.print("Key: ", KeypadNum);
-    delay(200);
+    robot.handleButtonGesture(gesture);
   }
-  // analogWrite(PWM1, 128);
-  // // analogWrite(PWM2, 128);
-  // digitalWrite(ENM1, HIGH);
-  // // digitalWrite(ENM2, LOW);
-  // delay(1000);
-  // analogWrite(PWM1, 50);
-  // // analogWrite(PWM2, 50);
-  // // digitalWrite(ENM1, HIGH);
-  // // digitalWrite(ENM2, HIGH);
-  // delay(1000);
-  // // analogWrite(PWM1, 50);
-  // // analogWrite(PWM2, 50);
-  // digitalWrite(ENM1, LOW);
-  // // digitalWrite(ENM2, HIGH);
-  // delay(1000);
-  delay(10);
+
+  robot.update();
+
+  if (robot.getMode() == MODE_MENU)
+  {
+    int currentScreen = robot.getCurrentMenuScreen();
+    switch (currentScreen)
+    {
+    case MENU_SCREEN_MAIN:
+      robot.getDisplay().drawMainScreen();
+      break;
+    case MENU_SCREEN_SPEED:
+      robot.getDisplay().drawSpeedSelectorScreen(robot.getCurrentSpeedLevel());
+      break;
+    case MENU_SCREEN_CURRENT:
+    {
+      char motorA[12];
+      char motorB[12];
+      snprintf(motorA, sizeof(motorA), "%.2f", robot.getMotor().getFilteredMotorCurrent());
+      snprintf(motorB, sizeof(motorB), "%.2f", robot.getMotor().getFilteredMotorBCurrent());
+      robot.getDisplay().drawCurentReading(motorA, motorB);
+      break;
+    }
+    case MENU_SCREEN_PEAK_CURRENT:
+    {
+      char peakA[12];
+      char peakB[12];
+      char peakTotal[12];
+      snprintf(peakA, sizeof(peakA), "%.2f", robot.getMotor().getPeakMotorACurrent());
+      snprintf(peakB, sizeof(peakB), "%.2f", robot.getMotor().getPeakMotorBCurrent());
+      snprintf(peakTotal, sizeof(peakTotal), "%.2f", robot.getMotor().getTotalPeakCurrent());
+      robot.getDisplay().drawPEAK_Current(peakA, peakB, peakTotal);
+      break;
+    }
+    case MENU_SCREEN_IR:
+      robot.getDisplay().displayIR(robot.getIRValues(), IRCount);
+      break;
+    case MENU_SCREEN_STRATEGY:
+      robot.getDisplay().drawStrategySelectorScreen(robot.getCurrentStrategy());
+      break;
+    case MENU_SCREEN_DIRECTION:
+      robot.getDisplay().drawDirectionIndicatorScreen(robot.getCurrentDirection());
+      break;
+    default:
+      robot.getDisplay().drawMainScreen();
+      break;
+    }
+  }
+
+  delay(5);
 }

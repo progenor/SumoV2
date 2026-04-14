@@ -10,5 +10,6 @@ extern Adafruit_MCP23X17 mcp;
 
 bool setupExpander();
 int checkExpanderInterrupt();
+bool isExpanderPressed(int pin);
 
 #endif // EXPANDER_H

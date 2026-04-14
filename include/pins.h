@@ -4,12 +4,20 @@
 #include <Arduino.h>
 #include "defines.h"
 
-// Motor Control Pins
-#define PWM_A1 9   // GP9 controls Driver A IN1
-#define PWM_A2 8   // GP8 controls Driver A IN2
-#define PWM_B1 20  // GP20 controls Driver B IN1
-#define PWM_B2 21  // GP21 controls Driver B IN2
-#define N_SLEEP 22 // GP22 controls both drivers' nSLEEP pins
+// SumoV2 motor driver pins (enable + pwm + direction style)
+#define ENM1 11
+#define ENM2 12
+#define PWM1 13
+#define PWM2 14
+#define DIR1 3
+#define DIR2 15
+
+// Legacy DRV8243 style mapping kept for compatibility with prior experiments.
+#define PWM_A1 9
+#define PWM_A2 8
+#define PWM_B1 20
+#define PWM_B2 21
+#define N_SLEEP 22
 
 #define INT_A 27
 
@@ -18,7 +26,7 @@
 
 // Current Sensing Pin (IPROPI)
 #define IPROPI_A_PIN 26 // GP26 ADC input for motor A current sensing
-#define IPROPI_B_PIN 27 // GP27 ADC input for motor B current sensing
+#define IPROPI_B_PIN 28 // GP28 ADC input for motor B current sensing
 
 // IR Sensor Pins
 #define SENSOR_LEFT 13

@@ -116,6 +116,14 @@ public:
      */
     void read();
 
+    float getAccelX() const { return ax; }
+    float getAccelY() const { return ay; }
+    float getAccelZ() const { return az; }
+    float getGyroX() const { return gx; }
+    float getGyroY() const { return gy; }
+    float getGyroZ() const { return gz; }
+    float getTempC() const { return temp; }
+
     /**
      * @brief Prints the current sensor data to serial in CSV format.
      * Output format: ax,ay,az,gx,gy,gz,temp

@@ -186,7 +186,7 @@ void Display::drawPEAK_Current(const char *peakA,
 
 static const unsigned char PROGMEM image_Pin_arrow_right_bits[] = {0x04, 0x00, 0x06, 0x00, 0xff, 0x00, 0xff, 0x80, 0xff, 0x00, 0x06, 0x00, 0x04, 0x00};
 
-const char *strategy_names[] = {"Sting", "Speed", "Run"};
+const char *strategy_names[] = {"Sting", "Speed", "Run", "IMU"};
 
 void Display::drawStrategySelectorScreen(int currentStrategy)
 {
@@ -200,7 +200,7 @@ void Display::drawStrategySelectorScreen(int currentStrategy)
     display.print("STRATEGY");
 
     // Draw three strategy options with highlight
-    uint8_t y_positions[] = {16, 32, 48};
+    uint8_t y_positions[] = {14, 26, 38, 50};
 
     for (int i = 0; i < STRATEGY_COUNT; i++)
     {
@@ -210,7 +210,7 @@ void Display::drawStrategySelectorScreen(int currentStrategy)
             // Draw bitmap arrow
             display.drawBitmap(15, y_positions[i] + 3, image_Pin_arrow_right_bits, 9, 7, 1);
             display.setCursor(30, y_positions[i]);
-            display.setTextSize(2);
+            display.setTextSize(1);
             display.print(strategy_names[i]);
             display.setTextSize(1);
         }

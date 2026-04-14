@@ -52,7 +52,8 @@ enum Strategy
     STRATEGY_STING = 0,
     STRATEGY_SPEED = 1,
     STRATEGY_RUN = 2,
-    STRATEGY_COUNT = 3
+    STRATEGY_IMU_HOLD = 3,
+    STRATEGY_COUNT = 4
 };
 
 // Motor direction enumeration
