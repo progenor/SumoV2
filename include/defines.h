@@ -1,6 +1,7 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#include <cstdint>
 // --- Display Configuration ---
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
