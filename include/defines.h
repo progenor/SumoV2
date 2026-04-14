@@ -33,15 +33,27 @@ extern SpeedConfig speedConfig;
 // IO Expander
 #define IO_ADDRESS 0x22
 
-enum Keypad
+enum ExpanderPin
 {
-    BTN0 = 0,
-    BTN1 = 1,
-    Key1 = 4,
-    Key2 = 5,
-    Key3 = 2,
-    Key4 = 3,
-
+    EXP_PIN_0 = 0,
+    EXP_PIN_1 = 1,
+    EXP_PIN_2 = 2,
+    EXP_PIN_3 = 3,
+    EXP_PIN_4 = 4,
+    EXP_PIN_5 = 5,
+    EXP_PIN_6 = 6,
+    EXP_PIN_7 = 7
 };
+
+// 4-key keypad routing on MCP23X17 pins.
+static const uint8_t KEYPAD_KEY_1_PIN = EXP_PIN_4;
+static const uint8_t KEYPAD_KEY_2_PIN = EXP_PIN_5;
+static const uint8_t KEYPAD_KEY_3_PIN = EXP_PIN_2;
+static const uint8_t KEYPAD_KEY_4_PIN = EXP_PIN_3;
+
+// Other MCP23X17 inputs on this PCB.
+static const uint8_t INPUT_IR6_PIN = EXP_PIN_1;
+static const uint8_t INPUT_CS_1_PIN = EXP_PIN_6;
+static const uint8_t INPUT_CS_2_PIN = EXP_PIN_7;
 
 #endif // DEFINES_H

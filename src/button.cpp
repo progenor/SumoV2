@@ -41,11 +41,11 @@ ButtonGesture ButtonManager::mapExpanderPinToGesture(int pin)
 {
     switch (pin)
     {
-    case BTN0:
+    case KEYPAD_KEY_1_PIN:
         return GESTURE_SINGLE_PRESS;
-    case BTN1:
+    case KEYPAD_KEY_2_PIN:
         return GESTURE_DOUBLE_PRESS;
-    case Key1:
+    case KEYPAD_KEY_3_PIN:
         return GESTURE_LONG_PRESS;
     default:
         return GESTURE_NONE;

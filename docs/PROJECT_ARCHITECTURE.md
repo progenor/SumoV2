@@ -5,7 +5,7 @@ SumoV2 now follows the same high-level structure as MiniSumo2026:
 - `main.cpp` handles the top-level loop only.
 - `Robot` is the orchestrator for setup, update, and strategy dispatch.
 - `Motor`, `IR`, `QTR`, `Display`, `ButtonManager`, and `IMU` are isolated subsystems.
-- `ButtonManager` reads the IO expander so menu and runtime controls are centralized.
+- `ButtonManager` reads keypad events from the IO expander while other expander pins remain generic inputs.
 
 ## System Overview
 
@@ -66,3 +66,4 @@ This repo keeps mixed-valid mapping on purpose:
 
 - Discrete motor-driver pins (`ENM1/ENM2/PWM1/PWM2/DIR1/DIR2`) are used by the new `Motor` class.
 - Legacy `PWM_Ax/PWM_Bx/N_SLEEP` defines are kept in `pins.h` for compatibility and future profile switching.
+- Expander channels are modeled as generic pins (`EXP_PIN_0..EXP_PIN_7`) with explicit keypad aliases in `defines.h`.
