@@ -390,7 +390,7 @@ float Robot::getBatteryVoltage()
 
     float rawAdc = static_cast<float>(sum) / sampleCount;
     float vAdc = (rawAdc / 4095.0f) * 3.3f;
-    return vAdc * dividerScale;
+    return vAdc * dividerScale * BATTERY_CALIBRATION_FACTOR;
 }
 
 float Robot::getTemperatureVoltage()

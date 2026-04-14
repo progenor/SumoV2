@@ -30,7 +30,9 @@ Battery monitor divider from schematic:
 - top resistor `R25 = 56k`
 - bottom resistor `R26 = 10k`
 - `Vadc = Vbat * (10 / 66)`
-- `Vbat = Vadc * 6.6`
+- `Vbat = Vadc * 6.6 * BATTERY_CALIBRATION_FACTOR`
+
+The calibration factor is set to match the live board reading you had before the schematic-based rewrite.
 
 The battery menu screen displays live voltage and an approximate 3S percentage at `MENU_SCREEN_BATTERY`.
 

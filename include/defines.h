@@ -13,6 +13,10 @@
 #define TEMP_SENSOR_VOLTAGE_OFFSET 0.5f
 #define TEMP_SENSOR_V_PER_C 0.01f
 
+// Battery divider calibration factor for the current PCB.
+// Applied after the raw divider ratio so the displayed value matches the board.
+#define BATTERY_CALIBRATION_FACTOR 0.56f
+
 // --- Speed Configuration Structure ---
 // These are runtime-mutable values, can be changed from menu
 struct SpeedConfig

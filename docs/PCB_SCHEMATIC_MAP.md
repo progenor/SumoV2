@@ -42,7 +42,9 @@ This document captures the current whole-PCB wiring map reflected in firmware.
 - Net: TPVLevel -> Pico GP28 (ADC2)
 - Equation:
   - Vadc = Vbat \* (10 / 66)
-  - Vbat = Vadc \* 6.6
+  - Vbat = Vadc \* 6.6 \* BATTERY_CALIBRATION_FACTOR
+
+Firmware applies a calibration factor so the displayed voltage matches the board's measured value.
 
 ## Temperature Monitor Network
 
