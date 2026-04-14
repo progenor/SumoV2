@@ -1,8 +1,7 @@
 #include "motors.h"
+#include "expander.h"
 
-const float V_REF = 3.3f;
-const float CS_OFFSET_V = 0.050f;
-const float CS_SENSITIVITY_V_PER_A = 0.020f;
+const float CS_ACTIVE_LEVEL_CURRENT_A = 1.0f;
 
 const float Motor::ALPHA_FILTER = 0.97f;
 
@@ -69,18 +68,14 @@ void Motor::stop()
 
 float Motor::readMotorCurrent()
 {
-    int rawADC = analogRead(IPROPI_A_PIN);
-    float voltage = (rawADC / 4095.0f) * V_REF;
-    float current = (voltage - CS_OFFSET_V) / CS_SENSITIVITY_V_PER_A;
-    return current > 0.0f ? current : 0.0f;
+    // Current sense for this PCB is routed to MCP23017 digital input.
+    // Exposed value is a status-level estimate, not an analog current measurement.
+    return isExpanderPressed(CURRENT_SENSE_A_EXP_PIN) ? CS_ACTIVE_LEVEL_CURRENT_A : 0.0f;
 }
 
 float Motor::readMotorBCurrent()
 {
-    int rawADC = analogRead(IPROPI_B_PIN);
-    float voltage = (rawADC / 4095.0f) * V_REF;
-    float current = (voltage - CS_OFFSET_V) / CS_SENSITIVITY_V_PER_A;
-    return current > 0.0f ? current : 0.0f;
+    return isExpanderPressed(CURRENT_SENSE_B_EXP_PIN) ? CS_ACTIVE_LEVEL_CURRENT_A : 0.0f;
 }
 
 float Motor::getFilteredMotorCurrent()

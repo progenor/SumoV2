@@ -16,12 +16,12 @@ Other MCP23X17 channels are treated as expander inputs, not keypad keys:
 
 ## Current Sense Formula (Pololu 2995)
 
-Current now uses the CS transfer function from the Pololu G2 24v21 page:
+For this PCB revision, current sense is routed into the MCP23017 (`INPUT_CS_1_PIN`, `INPUT_CS_2_PIN`) and read as digital status.
 
-- `Vcs ~= 0.020 * I + 0.050` (V)
-- `I = max(0, (Vcs - 0.050) / 0.020)`
+- `0.0`: no current-sense trip/activity detected
+- `1.0`: current-sense line active
 
-Where `Vcs` is the ADC-converted CS pin voltage.
+This avoids invalid analog reads from unconnected Pico ADC pins.
 
 ## Battery Voltage Formula
 

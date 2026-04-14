@@ -24,21 +24,28 @@
 // Buzzer Pin
 #define BUZZER 2
 
-// Current Sensing Pin (IPROPI)
-#define IPROPI_A_PIN 26 // GP26 ADC input for motor A current sensing
-#define IPROPI_B_PIN 28 // GP28 ADC input for motor B current sensing
+// Current sense comes from MCP23017 inputs (not direct Pico ADC).
+#define CURRENT_SENSE_A_EXP_PIN INPUT_CS_1_PIN
+#define CURRENT_SENSE_B_EXP_PIN INPUT_CS_2_PIN
 
 // Battery level monitor divider output (TPVLevel)
-#define BATTERY_LEVEL_PIN 28 // GP29 ADC input
+#define BATTERY_LEVEL_PIN 28 // GP28 ADC input
 
-// IR Sensor Pins
-#define SENSOR_LEFT 13
-#define SENSOR_CENTER 14
-#define SENSOR_RIGHT 12
+// IR nets from schematic
+#define IR1_PIN 6
+#define IR2_PIN 7
+#define IR3_PIN 8
+#define IR4_PIN 9
+#define IR5_PIN 10
 
-// QTR Sensor Pins
-#define QTR_LEFT 10
-#define QTR_RIGHT 11
+// Robot behavior uses a 3-sensor subset.
+#define SENSOR_LEFT IR3_PIN
+#define SENSOR_CENTER IR2_PIN
+#define SENSOR_RIGHT IR1_PIN
+
+// Extra two digital sensors mapped as QTR-compatible inputs.
+#define QTR_LEFT IR4_PIN
+#define QTR_RIGHT IR5_PIN
 
 // Button Pin
 #define BUTTON_PIN 20
