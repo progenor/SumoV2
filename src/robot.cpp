@@ -46,7 +46,6 @@ void Robot::update()
     qtrSensors.read();
     imu.read();
 
-    motor.updatePeaks();
     updateBehavior();
     updateBatteryBuzzer();
 
@@ -101,8 +100,8 @@ void Robot::stopBuzzerAlarm()
 void Robot::updateBatteryBuzzer()
 {
     const float usbFloorV = 6.0f;
-    const float warningThresholdV = 12.3f;
-    const float criticalThresholdV = 11.4f;
+    const float warningThresholdV = 12.2f;
+    const float criticalThresholdV = 11.3f;
 
     float currentBatteryV = getBatteryVoltage();
 

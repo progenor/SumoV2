@@ -35,26 +35,6 @@ void loop()
     case MENU_SCREEN_SPEED:
       robot.getDisplay().drawSpeedSelectorScreen(robot.getCurrentSpeedLevel());
       break;
-    case MENU_SCREEN_CURRENT:
-    {
-      char motorA[12];
-      char motorB[12];
-      snprintf(motorA, sizeof(motorA), "%.2f", robot.getMotor().getFilteredMotorCurrent());
-      snprintf(motorB, sizeof(motorB), "%.2f", robot.getMotor().getFilteredMotorBCurrent());
-      robot.getDisplay().drawCurentReading(motorA, motorB);
-      break;
-    }
-    case MENU_SCREEN_PEAK_CURRENT:
-    {
-      char peakA[12];
-      char peakB[12];
-      char peakTotal[12];
-      snprintf(peakA, sizeof(peakA), "%.2f", robot.getMotor().getPeakMotorACurrent());
-      snprintf(peakB, sizeof(peakB), "%.2f", robot.getMotor().getPeakMotorBCurrent());
-      snprintf(peakTotal, sizeof(peakTotal), "%.2f", robot.getMotor().getTotalPeakCurrent());
-      robot.getDisplay().drawPEAK_Current(peakA, peakB, peakTotal);
-      break;
-    }
     case MENU_SCREEN_IR:
       robot.getDisplay().displayIR(robot.getIRValues(), IRCount);
       break;

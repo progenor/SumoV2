@@ -16,12 +16,12 @@ Other MCP23X17 channels are treated as expander inputs, not keypad keys:
 
 ## Current Sense Formula (Pololu 2995)
 
-For this PCB revision, current sense is routed into the MCP23017 (`INPUT_CS_1_PIN`, `INPUT_CS_2_PIN`) and read as digital status.
+For this PCB revision, current sense is routed through the MCP23017 (`INPUT_CS_1_PIN`, `INPUT_CS_2_PIN`) and is only requested when the current or peak-current menu screens are opened.
 
-- `0.0`: no current-sense trip/activity detected
-- `1.0`: current-sense line active
+- This keeps the fast control loop from paying the current-sense cost every cycle.
+- Current values remain cached until the next request.
 
-This avoids invalid analog reads from unconnected Pico ADC pins.
+This avoids extra loop overhead when current information is not on screen.
 
 ## Battery Voltage Formula
 

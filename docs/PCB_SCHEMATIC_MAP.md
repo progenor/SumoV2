@@ -32,8 +32,8 @@ This document captures the current whole-PCB wiring map reflected in firmware.
 - GPA3 (pin index 3): Keypad 4
 - GPA4 (pin index 4): Keypad 1
 - GPA5 (pin index 5): Keypad 2
-- GPA6 (pin index 6): CS_1
-- GPA7 (pin index 7): CS_2
+- GPA6 (pin index 6): CS_1 (reserved / unused by firmware)
+- GPA7 (pin index 7): CS_2 (reserved / unused by firmware)
 - INTA: connected to Pico GP27
 
 ## Battery Monitor Network
