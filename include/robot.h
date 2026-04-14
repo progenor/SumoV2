@@ -48,6 +48,9 @@ public:
     void handleKeypadAction(KeypadAction action);
 
     float getBatteryVoltage();
+    int getBatteryRawAdc();
+    float getBatteryAdcVoltageFromRaw(int rawAdc);
+    float getBatteryVoltageFromRaw(int rawAdc);
     float getTemperatureVoltage();
     float getTemperatureC();
 

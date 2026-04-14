@@ -65,8 +65,13 @@ void loop()
       robot.getDisplay().drawDirectionIndicatorScreen(robot.getCurrentDirection());
       break;
     case MENU_SCREEN_BATTERY:
-      robot.getDisplay().drawBatteryVoltageScreen(robot.getBatteryVoltage());
+    {
+      int rawBatteryAdc = robot.getBatteryRawAdc();
+      float batteryAdcVoltage = robot.getBatteryAdcVoltageFromRaw(rawBatteryAdc);
+      float batteryVoltage = robot.getBatteryVoltageFromRaw(rawBatteryAdc);
+      robot.getDisplay().drawBatteryVoltageScreen(batteryVoltage, batteryAdcVoltage, rawBatteryAdc);
       break;
+    }
     case MENU_SCREEN_TEMP:
       robot.getDisplay().drawTemperatureScreen(robot.getTemperatureC(), robot.getTemperatureVoltage());
       break;

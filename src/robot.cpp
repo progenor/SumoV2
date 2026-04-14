@@ -378,9 +378,11 @@ int Robot::getCurrentDirection() const
 
 float Robot::getBatteryVoltage()
 {
-    // Divider: R25=56k (top), R26=10k (bottom), Vadc = Vbat * (10 / 66)
-    const float dividerScale = (56.0f + 10.0f) / 10.0f; // 6.6
+    return getBatteryVoltageFromRaw(getBatteryRawAdc());
+}
 
+int Robot::getBatteryRawAdc()
+{
     const int sampleCount = 8;
     int sum = 0;
     for (int i = 0; i < sampleCount; i++)
@@ -388,9 +390,26 @@ float Robot::getBatteryVoltage()
         sum += analogRead(BATTERY_LEVEL_PIN);
     }
 
-    float rawAdc = static_cast<float>(sum) / sampleCount;
-    float vAdc = (rawAdc / 4095.0f) * 3.3f;
-    return vAdc * dividerScale * BATTERY_CALIBRATION_FACTOR;
+    return sum / sampleCount;
+}
+
+float Robot::getBatteryAdcVoltageFromRaw(int rawAdc)
+{
+    return (static_cast<float>(rawAdc) / 4095.0f) * 3.3f;
+}
+
+float Robot::getBatteryVoltageFromRaw(int rawAdc)
+{
+    // Divider: R25=56k (top), R26=10k (bottom), Vadc = Vbat * (10 / 66)
+    const float dividerScale = (56.0f + 10.0f) / 10.0f; // 6.6
+
+    float vAdc = getBatteryAdcVoltageFromRaw(rawAdc);
+    float correctedAdc = vAdc - BATTERY_ADC_OFFSET_V;
+    if (correctedAdc < 0.0f)
+    {
+        correctedAdc = 0.0f;
+    }
+    return correctedAdc * dividerScale;
 }
 
 float Robot::getTemperatureVoltage()

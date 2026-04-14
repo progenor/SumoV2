@@ -320,7 +320,7 @@ void Display::drawSpeedSelectorScreen(int currentSpeedLevel)
     display.display();
 }
 
-void Display::drawBatteryVoltageScreen(float batteryVoltage)
+void Display::drawBatteryVoltageScreen(float batteryVoltage, float adcVoltage, int rawAdc)
 {
     if (!shouldUpdate())
         return;
@@ -345,10 +345,16 @@ void Display::drawBatteryVoltageScreen(float batteryVoltage)
         percent = 100.0f;
 
     display.setTextSize(1);
-    display.setCursor(0, 52);
+    display.setCursor(0, 44);
     display.print("~");
     display.print(percent, 0);
     display.print("% (3S)");
+
+    display.setCursor(0, 54);
+    display.print("ADC:");
+    display.print(adcVoltage, 3);
+    display.print("V ");
+    display.print(rawAdc);
 
     display.display();
 }
