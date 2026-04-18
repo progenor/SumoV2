@@ -13,17 +13,8 @@ void setup()
   buttonManager.setup();
 }
 
-void loop()
+void Screen()
 {
-  buttonManager.update();
-  ButtonGesture gesture = buttonManager.getGesture();
-  if (gesture != GESTURE_NONE)
-  {
-    robot.handleButtonGesture(gesture);
-  }
-
-  robot.update();
-
   if (robot.getMode() == MODE_MENU)
   {
     int currentScreen = robot.getCurrentMenuScreen();
@@ -35,26 +26,6 @@ void loop()
     case MENU_SCREEN_SPEED:
       robot.getDisplay().drawSpeedSelectorScreen(robot.getCurrentSpeedLevel());
       break;
-    case MENU_SCREEN_CURRENT:
-    {
-      char motorA[12];
-      char motorB[12];
-      snprintf(motorA, sizeof(motorA), "%.2f", robot.getMotor().getFilteredMotorCurrent());
-      snprintf(motorB, sizeof(motorB), "%.2f", robot.getMotor().getFilteredMotorBCurrent());
-      robot.getDisplay().drawCurentReading(motorA, motorB);
-      break;
-    }
-    case MENU_SCREEN_PEAK_CURRENT:
-    {
-      char peakA[12];
-      char peakB[12];
-      char peakTotal[12];
-      snprintf(peakA, sizeof(peakA), "%.2f", robot.getMotor().getPeakMotorACurrent());
-      snprintf(peakB, sizeof(peakB), "%.2f", robot.getMotor().getPeakMotorBCurrent());
-      snprintf(peakTotal, sizeof(peakTotal), "%.2f", robot.getMotor().getTotalPeakCurrent());
-      robot.getDisplay().drawPEAK_Current(peakA, peakB, peakTotal);
-      break;
-    }
     case MENU_SCREEN_IR:
       robot.getDisplay().displayIR(robot.getIRValues(), IRCount);
       break;
@@ -64,11 +35,38 @@ void loop()
     case MENU_SCREEN_DIRECTION:
       robot.getDisplay().drawDirectionIndicatorScreen(robot.getCurrentDirection());
       break;
+    case MENU_SCREEN_BATTERY:
+    {
+      int rawBatteryAdc = robot.getBatteryRawAdc();
+      float batteryAdcVoltage = robot.getBatteryAdcVoltageFromRaw(rawBatteryAdc);
+      float batteryVoltage = robot.getBatteryVoltageFromRaw(rawBatteryAdc);
+      robot.getDisplay().drawBatteryVoltageScreen(batteryVoltage, batteryAdcVoltage, rawBatteryAdc);
+      break;
+    }
+    case MENU_SCREEN_TEMP:
+      robot.getDisplay().drawTemperatureScreen(robot.getTemperatureC(), robot.getTemperatureVoltage());
+      break;
     default:
       robot.getDisplay().drawMainScreen();
       break;
     }
   }
+}
+
+void loop()
+{
+  buttonManager.update();
+  KeypadAction action = buttonManager.getAction();
+  if (action != KEYPAD_ACTION_NONE)
+  {
+    robot.handleKeypadAction(action);
+  }
+
+  // robot.testDirections();
+
+  robot.update();
+
+  Screen();
 
   delay(5);
 }

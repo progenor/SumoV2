@@ -6,9 +6,9 @@
 #define MENU_SCREEN_SPEED 1
 #define MENU_SCREEN_IR 2
 #define MENU_SCREEN_STRATEGY 3
-#define MENU_SCREEN_CURRENT 4
-#define MENU_SCREEN_PEAK_CURRENT 5
-#define MENU_SCREEN_DIRECTION 6
+#define MENU_SCREEN_DIRECTION 4
+#define MENU_SCREEN_BATTERY 5
+#define MENU_SCREEN_TEMP 6
 #define MENU_SCREEN_COUNT 7
 
 // Robot mode enumeration
@@ -40,11 +40,11 @@ struct SpeedPreset
 // Preset configurations
 static const SpeedPreset SPEED_PRESETS[SPEED_LEVEL_COUNT] = {
     // LOW
-    {150, 80, 20, 10},
+    {140, 50, 20, 10},
     // MEDIUM
-    {200, 120, 25, 15},
+    {200, 50, 25, 15},
     // HIGH
-    {255, 180, 40, 25}};
+    {255, 50, 40, 25}};
 
 // Strategy enumeration
 enum Strategy

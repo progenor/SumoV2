@@ -33,11 +33,6 @@ public:
     // Display loading screen with custom bitmap
     void drawLoadingScreen(const char *status = "Loading...");
     void drawMainScreen(void);
-    void drawCurentReading(const char *MotorA_current,
-                           const char *MotorB_current);
-    void drawPEAK_Current(const char *peakA,
-                          const char *peakB,
-                          const char *peakTotal);
 
     // Display IR sensor bars (0-1 digital values)
     void displayIR(int *irValues, int sensorCount);
@@ -54,6 +49,8 @@ public:
     void drawStatusScreen(RobotMode mode, bool isPaused, int currentScreen);
     void drawStrategySelectorScreen(int currentStrategy);
     void drawDirectionIndicatorScreen(int motorDirection);
+    void drawBatteryVoltageScreen(float batteryVoltage, float adcVoltage, int rawAdc);
+    void drawTemperatureScreen(float temperatureC, float sensorVoltage);
 
 private:
     Adafruit_SSD1306 display;

@@ -3,12 +3,13 @@
 
 #include <Arduino.h>
 
-enum ButtonGesture
+enum KeypadAction
 {
-    GESTURE_NONE,
-    GESTURE_SINGLE_PRESS,
-    GESTURE_DOUBLE_PRESS,
-    GESTURE_LONG_PRESS
+    KEYPAD_ACTION_NONE,
+    KEYPAD_ACTION_H,
+    KEYPAD_ACTION_J,
+    KEYPAD_ACTION_K,
+    KEYPAD_ACTION_L
 };
 
 class ButtonManager
@@ -19,13 +20,13 @@ public:
     void setup();
     void update();
 
-    ButtonGesture getGesture();
+    KeypadAction getAction();
 
 private:
-    ButtonGesture detectedGesture;
+    KeypadAction detectedAction;
     unsigned long lastEventMs;
 
-    ButtonGesture mapExpanderPinToGesture(int pin);
+    KeypadAction mapExpanderPinToAction(int pin);
 };
 
 #endif // BUTTON_H

@@ -2,9 +2,53 @@
 
 ## Control Mapping (Current)
 
-- Expander `BTN0`: cycle menu screen
-- Expander `BTN1`: cycle speed (on speed screen) or strategy (on strategy screen)
-- Expander `Key1`: pause/resume (long-press semantic)
+- Vim-style keypad mode (`h j k l`):
+- `h` (MCP pin 4): previous menu screen
+- `l` (MCP pin 3): next menu screen
+- `j` (MCP pin 5): decrease selected value (speed/strategy)
+- `k` (MCP pin 2): increase selected value (speed/strategy)
+
+Other MCP23X17 channels are treated as expander inputs, not keypad keys:
+
+- MCP pin 1: `INPUT_IR6_PIN`
+- MCP pin 6: `INPUT_CS_1_PIN`
+- MCP pin 7: `INPUT_CS_2_PIN`
+
+## Current Sense Formula (Pololu 2995)
+
+For this PCB revision, current sense is routed through the MCP23017 (`INPUT_CS_1_PIN`, `INPUT_CS_2_PIN`) and is only requested when the current or peak-current menu screens are opened.
+
+- This keeps the fast control loop from paying the current-sense cost every cycle.
+- Current values remain cached until the next request.
+
+This avoids extra loop overhead when current information is not on screen.
+
+## Battery Voltage Formula
+
+Battery monitor divider from schematic:
+
+- top resistor `R25 = 56k`
+- bottom resistor `R26 = 10k`
+- `Vadc = Vbat * (10 / 66)`
+- calibrated firmware model: `Vbat = max(0, (Vadc - BATTERY_ADC_OFFSET_V)) * 6.6`
+
+The battery menu screen displays live voltage and an approximate 3S percentage at `MENU_SCREEN_BATTERY`.
+
+## Battery Buzzer Alerts
+
+- Below `6.0V`: buzzer alerts are disabled and reset, so USB power does not trigger warnings.
+- Below `12.3V`: warning pattern of `3` beeps, each `500ms`.
+- Below `11.4V`: continuous buzzer alarm.
+
+## Temperature Screen
+
+- Temperature monitor net `TM1` is sampled on Pico `GP26` (`TEMP_MONITOR_PIN`).
+- Menu screen: `MENU_SCREEN_TEMP`.
+- Display shows estimated `C` and raw TM1 voltage.
+
+## Full PCB Mapping
+
+See `docs/PCB_SCHEMATIC_MAP.md` for the consolidated whole-board net map.
 
 ## Strategy List
 

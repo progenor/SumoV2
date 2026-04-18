@@ -14,5 +14,8 @@ void setupPins()
         pinMode(QTRPins[i], INPUT);
     }
 
+    pinMode(BATTERY_LEVEL_PIN, INPUT);
+    pinMode(TEMP_MONITOR_PIN, INPUT);
+
     pinMode(INT_A, INPUT_PULLUP);
 }

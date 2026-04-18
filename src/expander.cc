@@ -39,21 +39,12 @@ bool setupExpander()
   // IO Expander
   mcp.setupInterrupts(true, false, LOW);
 
-  // configure button pin for input with pull up
-  mcp.pinMode(0, INPUT_PULLUP);
-  mcp.pinMode(1, INPUT_PULLUP);
-  mcp.pinMode(2, INPUT_PULLUP);
-  mcp.pinMode(3, INPUT_PULLUP);
-  mcp.pinMode(4, INPUT_PULLUP);
-  mcp.pinMode(5, INPUT_PULLUP);
-
-  // enable interrupt on button_pin
-  mcp.setupInterruptPin(0, LOW);
-  mcp.setupInterruptPin(1, LOW);
-  mcp.setupInterruptPin(2, LOW);
-  mcp.setupInterruptPin(3, LOW);
-  mcp.setupInterruptPin(4, LOW);
-  mcp.setupInterruptPin(5, LOW);
+  // Configure MCP pins 0..7 as inputs with pull-up.
+  for (uint8_t pin = EXP_PIN_0; pin <= EXP_PIN_7; pin++)
+  {
+    mcp.pinMode(pin, INPUT_PULLUP);
+    mcp.setupInterruptPin(pin, LOW);
+  }
 
   return true;
 }

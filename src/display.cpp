@@ -16,6 +16,7 @@ bool Display::setup()
     display.clearDisplay();
     display.setTextColor(1);
     display.display();
+    display.setRotation(2);
     return true;
 }
 
@@ -105,82 +106,6 @@ void Display::drawMainScreen(void)
     display.setCursor(23, 56);
     display.setTextSize(1);
     display.print("T.F.S Robotics");
-    display.display();
-}
-
-void Display::drawCurentReading(const char *MotorA_current = "NAN",
-                                const char *MotorB_current = "NAN")
-{
-    display.clearDisplay();
-
-    // Battery
-    display.drawBitmap(0, 0, image_Battery_bits, 32, 32, 1);
-
-    // Layer 2
-    display.setTextColor(1);
-    display.setTextSize(2);
-    display.setTextWrap(false);
-    display.setCursor(24, 9);
-    display.print("A:");
-
-    // Battery copy 1
-    display.drawBitmap(0, 32, image_Battery_bits, 32, 32, 1);
-
-    // Layer 2 copy 1
-    display.setCursor(25, 41);
-    display.print("B:");
-
-    // Layer 5
-    display.setCursor(55, 9);
-    display.print(MotorB_current);
-    // Layer 5 copy 1
-    display.setCursor(56, 41);
-    display.print(MotorA_current);
-
-    display.display();
-}
-
-void Display::drawPEAK_Current(const char *peakA,
-                               const char *peakB,
-                               const char *peakTotal)
-{
-    display.clearDisplay();
-
-    // Battery
-    display.drawBitmap(0, 2, image_Battery_bits_16x16, 16, 16, 1);
-
-    // Layer 2
-    display.setTextColor(1);
-    display.setTextWrap(false);
-    display.setTextSize(1);
-    display.setCursor(18, 7);
-    display.print("Peak A:");
-
-    // Battery copy 1
-    display.drawBitmap(0, 19, image_Battery_bits_16x16, 16, 16, 1);
-
-    // Layer 2 copy 1
-    display.setCursor(18, 24);
-    display.print("Peak B:");
-
-    // Layer 5 - Peak A value
-    display.setCursor(81, 8);
-    display.print(peakA);
-
-    // Layer 5 copy 1 - Peak B value
-    display.setCursor(81, 24);
-    display.print(peakB);
-
-    // Layer 7 - Total label
-    display.setTextSize(2);
-    display.setCursor(3, 45);
-    display.print("Peak:");
-
-    // Layer 8 - Total peak value
-    display.setTextSize(2);
-    display.setCursor(67, 44);
-    display.print(peakTotal);
-
     display.display();
 }
 
@@ -316,6 +241,79 @@ void Display::drawSpeedSelectorScreen(int currentSpeedLevel)
             display.print(speedNames[i]);
         }
     }
+
+    display.display();
+}
+
+void Display::drawBatteryVoltageScreen(float batteryVoltage, float adcVoltage, int rawAdc)
+{
+    if (!shouldUpdate())
+        return;
+
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextWrap(false);
+
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.print("BATTERY");
+
+    display.setTextSize(2);
+    display.setCursor(0, 22);
+    display.print(batteryVoltage, 2);
+    display.print(" V");
+
+    float percent = ((batteryVoltage - 10.0f) / (12.6f - 10.0f)) * 100.0f;
+    if (percent < 0.0f)
+        percent = 0.0f;
+    if (percent > 100.0f)
+        percent = 100.0f;
+
+    display.setTextSize(1);
+    display.setCursor(0, 44);
+    display.print("~");
+    display.print(percent, 0);
+    display.print("% (3S)");
+
+    display.setCursor(0, 54);
+    display.print("ADC:");
+    display.print(adcVoltage, 3);
+    display.print("V ");
+    display.print(rawAdc);
+
+    display.display();
+}
+
+void Display::drawTemperatureScreen(float temperatureC, float sensorVoltage)
+{
+    if (!shouldUpdate())
+        return;
+
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextWrap(false);
+
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.print("TEMP (TM1)");
+
+    display.setTextSize(2);
+    display.setCursor(0, 18);
+    if (isnan(temperatureC))
+    {
+        display.print("N/A");
+    }
+    else
+    {
+        display.print(temperatureC, 1);
+        display.print(" C");
+    }
+
+    display.setTextSize(1);
+    display.setCursor(0, 50);
+    display.print("ADC: ");
+    display.print(sensorVoltage, 3);
+    display.print(" V");
 
     display.display();
 }

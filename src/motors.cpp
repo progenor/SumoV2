@@ -1,18 +1,6 @@
 #include "motors.h"
 
-const float R_IPROPI = 1000.0f;
-const float A_IPROPI = 3075.0f;
-const float V_REF = 3.3f;
-
-const float Motor::ALPHA_FILTER = 0.97f;
-
 Motor::Motor()
-    : filteredCurrent_A(0.0f),
-      filteredCurrent_B(0.0f),
-      isFirstRead_A(true),
-      isFirstRead_B(true),
-      peakCurrent_A(0.0f),
-      peakCurrent_B(0.0f)
 {
 }
 
@@ -43,22 +31,22 @@ void Motor::drive(int pwmLeft, int pwmRight, bool dirLeftForward, bool dirRightF
 
 void Motor::forward(int pwm)
 {
-    drive(pwm, pwm, true, true);
+    drive(pwm, pwm, true, false);
 }
 
 void Motor::backward(int pwm)
-{
-    drive(pwm, pwm, false, false);
-}
-
-void Motor::left(int pwm)
 {
     drive(pwm, pwm, false, true);
 }
 
 void Motor::right(int pwm)
 {
-    drive(pwm, pwm, true, false);
+    drive(pwm, pwm, true, true);
+}
+
+void Motor::left(int pwm)
+{
+    drive(pwm, pwm, false, false);
 }
 
 void Motor::stop()
@@ -67,82 +55,15 @@ void Motor::stop()
     analogWrite(PWM2, 0);
 }
 
-float Motor::readMotorCurrent()
+void Motor::testDirections()
 {
-    int rawADC = analogRead(IPROPI_A_PIN);
-    float voltage = (rawADC / 4095.0f) * V_REF;
-    return (voltage / R_IPROPI) * A_IPROPI;
-}
-
-float Motor::readMotorBCurrent()
-{
-    int rawADC = analogRead(IPROPI_B_PIN);
-    float voltage = (rawADC / 4095.0f) * V_REF;
-    return (voltage / R_IPROPI) * A_IPROPI;
-}
-
-float Motor::getFilteredMotorCurrent()
-{
-    float rawCurrent = readMotorCurrent();
-
-    if (isFirstRead_A)
-    {
-        filteredCurrent_A = rawCurrent;
-        isFirstRead_A = false;
-        return filteredCurrent_A;
-    }
-
-    filteredCurrent_A = (ALPHA_FILTER * rawCurrent) + ((1.0f - ALPHA_FILTER) * filteredCurrent_A);
-    return filteredCurrent_A;
-}
-
-float Motor::getFilteredMotorBCurrent()
-{
-    float rawCurrent = readMotorBCurrent();
-
-    if (isFirstRead_B)
-    {
-        filteredCurrent_B = rawCurrent;
-        isFirstRead_B = false;
-        return filteredCurrent_B;
-    }
-
-    filteredCurrent_B = (ALPHA_FILTER * rawCurrent) + ((1.0f - ALPHA_FILTER) * filteredCurrent_B);
-    return filteredCurrent_B;
-}
-
-void Motor::updatePeaks()
-{
-    float currentA = getFilteredMotorCurrent();
-    if (currentA > peakCurrent_A)
-    {
-        peakCurrent_A = currentA;
-    }
-
-    float currentB = getFilteredMotorBCurrent();
-    if (currentB > peakCurrent_B)
-    {
-        peakCurrent_B = currentB;
-    }
-}
-
-float Motor::getPeakMotorACurrent()
-{
-    return peakCurrent_A;
-}
-
-float Motor::getPeakMotorBCurrent()
-{
-    return peakCurrent_B;
-}
-
-float Motor::getTotalPeakCurrent()
-{
-    return peakCurrent_A + peakCurrent_B;
-}
-
-void Motor::resetPeaks()
-{
-    peakCurrent_A = 0.0f;
-    peakCurrent_B = 0.0f;
+    forward(128);
+    delay(1000);
+    backward(128);
+    delay(1000);
+    left(128);
+    delay(1000);
+    right(128);
+    delay(1000);
+    stop();
 }

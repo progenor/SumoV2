@@ -1,5 +1,6 @@
 #include "robot.h"
 #include "pins.h"
+#include <math.h>
 
 SpeedConfig speedConfig;
 
@@ -8,8 +9,14 @@ Robot::Robot()
       currentMenuScreen(MENU_SCREEN_MAIN),
       paused(false),
       currentSpeedLevel(SPEED_LEVEL_LOW),
-      currentStrategy(STRATEGY_SPEED),
-      currentMotorDirection(DIRECTION_STOP)
+      currentStrategy(STRATEGY_STING),
+      currentMotorDirection(DIRECTION_STOP),
+      buzzerMode(BUZZER_MODE_IDLE),
+      buzzerOutputOn(false),
+      batterySampleValid(false),
+      lastBatteryVoltage(0.0f),
+      buzzerLastToggleMs(0),
+      buzzerTransitionsRemaining(0)
 {
 }
 
@@ -40,13 +47,124 @@ void Robot::update()
     qtrSensors.read();
     imu.read();
 
-    motor.updatePeaks();
     updateBehavior();
+    updateBatteryBuzzer();
 
     if (currentMode != MODE_MENU)
     {
         display.displayIR(getIRValues(), IRCount);
     }
+}
+
+void Robot::testDirections()
+{
+    motor.testDirections();
+}
+
+void Robot::setBuzzerOutput(bool on)
+{
+    if (on == buzzerOutputOn)
+    {
+        return;
+    }
+
+    if (on)
+    {
+        tone(BUZZER, 2200);
+    }
+    else
+    {
+        noTone(BUZZER);
+    }
+    buzzerOutputOn = on;
+}
+
+void Robot::startWarningPattern()
+{
+    buzzerMode = BUZZER_MODE_WARN_PATTERN;
+    // Start ON immediately, then do 5 transitions every 500ms:
+    // ON->OFF->ON->OFF->ON->OFF  => 3 beeps, each 500ms.
+    buzzerTransitionsRemaining = 5;
+    buzzerLastToggleMs = millis();
+    setBuzzerOutput(true);
+}
+
+void Robot::startContinuousAlarm()
+{
+    buzzerMode = BUZZER_MODE_CONTINUOUS;
+    buzzerTransitionsRemaining = 0;
+    setBuzzerOutput(true);
+}
+
+void Robot::stopBuzzerAlarm()
+{
+    buzzerMode = BUZZER_MODE_IDLE;
+    buzzerTransitionsRemaining = 0;
+    setBuzzerOutput(false);
+}
+
+void Robot::updateBatteryBuzzer()
+{
+    const float usbFloorV = 6.0f;
+    const float warningThresholdV = 12.2f;
+    const float criticalThresholdV = 11.3f;
+
+    float currentBatteryV = getBatteryVoltage();
+
+    if (currentBatteryV < usbFloorV)
+    {
+        stopBuzzerAlarm();
+        batterySampleValid = false;
+        lastBatteryVoltage = currentBatteryV;
+        return;
+    }
+
+    if (!batterySampleValid)
+    {
+        batterySampleValid = true;
+        lastBatteryVoltage = currentBatteryV;
+        return;
+    }
+
+    bool crossedBelowWarning = (lastBatteryVoltage >= warningThresholdV) && (currentBatteryV < warningThresholdV);
+
+    if (currentBatteryV < criticalThresholdV)
+    {
+        if (buzzerMode != BUZZER_MODE_CONTINUOUS)
+        {
+            startContinuousAlarm();
+        }
+    }
+    else
+    {
+        if (buzzerMode == BUZZER_MODE_CONTINUOUS)
+        {
+            stopBuzzerAlarm();
+        }
+
+        if (crossedBelowWarning && buzzerMode == BUZZER_MODE_IDLE)
+        {
+            startWarningPattern();
+        }
+    }
+
+    if (buzzerMode == BUZZER_MODE_WARN_PATTERN)
+    {
+        unsigned long now = millis();
+        if ((now - buzzerLastToggleMs) >= 500)
+        {
+            buzzerLastToggleMs = now;
+            setBuzzerOutput(!buzzerOutputOn);
+            buzzerTransitionsRemaining--;
+
+            if (buzzerTransitionsRemaining <= 0)
+            {
+                stopBuzzerAlarm();
+            }
+        }
+    }
+
+    lastBatteryVoltage = currentBatteryV;
 }
 
 void Robot::updateBehavior_Speed()
@@ -216,18 +334,36 @@ void Robot::updateBehavior()
     }
 }
 
-void Robot::handleButtonGesture(ButtonGesture gesture)
+void Robot::handleKeypadAction(KeypadAction action)
 {
-    switch (gesture)
+    switch (action)
     {
-    case GESTURE_SINGLE_PRESS:
+    case KEYPAD_ACTION_H:
+        if (currentMode == MODE_MENU)
+        {
+            cycleMenuScreenBackward();
+        }
+        break;
+
+    case KEYPAD_ACTION_L:
         if (currentMode == MODE_MENU)
         {
             cycleMenuScreen();
         }
         break;
 
-    case GESTURE_DOUBLE_PRESS:
+    case KEYPAD_ACTION_J:
+        if (currentMenuScreen == MENU_SCREEN_SPEED)
+        {
+            cycleSpeedLevelBackward();
+        }
+        else if (currentMenuScreen == MENU_SCREEN_STRATEGY)
+        {
+            cycleStrategyBackward();
+        }
+        break;
+
+    case KEYPAD_ACTION_K:
         if (currentMenuScreen == MENU_SCREEN_SPEED)
         {
             cycleSpeedLevel();
@@ -238,11 +374,7 @@ void Robot::handleButtonGesture(ButtonGesture gesture)
         }
         break;
 
-    case GESTURE_LONG_PRESS:
-        togglePause();
-        break;
-
-    case GESTURE_NONE:
+    case KEYPAD_ACTION_NONE:
     default:
         break;
     }
@@ -360,4 +492,94 @@ void Robot::cycleStrategy()
 int Robot::getCurrentDirection() const
 {
     return currentMotorDirection;
+}
+
+float Robot::getBatteryVoltage()
+{
+    return getBatteryVoltageFromRaw(getBatteryRawAdc());
+}
+
+int Robot::getBatteryRawAdc()
+{
+    const int sampleCount = 8;
+    int sum = 0;
+    for (int i = 0; i < sampleCount; i++)
+    {
+        sum += analogRead(BATTERY_LEVEL_PIN);
+    }
+
+    return sum / sampleCount;
+}
+
+float Robot::getBatteryAdcVoltageFromRaw(int rawAdc)
+{
+    return (static_cast<float>(rawAdc) / 4095.0f) * 3.3f;
+}
+
+float Robot::getBatteryVoltageFromRaw(int rawAdc)
+{
+    // Divider: R25=56k (top), R26=10k (bottom), Vadc = Vbat * (10 / 66)
+    const float dividerScale = (56.0f + 10.0f) / 10.0f; // 6.6
+
+    float vAdc = getBatteryAdcVoltageFromRaw(rawAdc);
+    // float correctedAdc = vAdc - BATTERY_ADC_OFFSET_V;
+    float correctedAdc = vAdc + 0.12f; // Adjusted to match measured values better
+    if (correctedAdc < 0.0f)
+    {
+        correctedAdc = 0.0f;
+    }
+    return correctedAdc * dividerScale;
+}
+
+float Robot::getTemperatureVoltage()
+{
+    const int sampleCount = 8;
+    int sum = 0;
+    for (int i = 0; i < sampleCount; i++)
+    {
+        sum += analogRead(TEMP_MONITOR_PIN);
+    }
+
+    float rawAdc = static_cast<float>(sum) / sampleCount;
+    return (rawAdc / 4095.0f) * 3.3f;
+}
+
+float Robot::getTemperatureC()
+{
+    float voltage = getTemperatureVoltage();
+
+    if (!isfinite(voltage) || voltage <= 0.0f || voltage >= (TEMP_NTC_PULLUP_VOLTAGE - 0.01f))
+    {
+        return NAN;
+    }
+
+    float resistance = TEMP_NTC_PULLUP_RESISTANCE * voltage / (TEMP_NTC_PULLUP_VOLTAGE - voltage);
+    if (!isfinite(resistance) || resistance <= 0.0f)
+    {
+        return NAN;
+    }
+
+    const float referenceKelvin = TEMP_NTC_REFERENCE_TEMP_C + 273.15f;
+    float invTemperature = (1.0f / referenceKelvin) + (1.0f / TEMP_NTC_BETA) * logf(resistance / TEMP_NTC_R25);
+    if (!isfinite(invTemperature) || invTemperature <= 0.0f)
+    {
+        return NAN;
+    }
+
+    return (1.0f / invTemperature) - 273.15f;
+}
+
+void Robot::cycleMenuScreenBackward()
+{
+    currentMenuScreen = (currentMenuScreen + MENU_SCREEN_COUNT - 1) % MENU_SCREEN_COUNT;
+}
+
+void Robot::cycleSpeedLevelBackward()
+{
+    setSpeedLevel((currentSpeedLevel + SPEED_LEVEL_COUNT - 1) % SPEED_LEVEL_COUNT);
+}
+
+void Robot::cycleStrategyBackward()
+{
+    setStrategy((currentStrategy + STRATEGY_COUNT - 1) % STRATEGY_COUNT);
 }
