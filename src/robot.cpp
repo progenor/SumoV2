@@ -39,6 +39,8 @@ Robot::Robot()
       imuTargetPreviouslySeen(false),
       imuLastHeadingErrorDeg(0.0f),
       imuLastPidCorrection(0.0f),
+      imuAvailable(false),
+      imuLastPrintMs(0),
       qtrLineSensorsEnabled(ENABLE_QTR_LINE_SENSORS != 0),
       imuLastSeenDirection(1),
       imuSearchDirection(1),
@@ -50,7 +52,12 @@ Robot::Robot()
 void Robot::setup()
 {
     Serial.begin(115200);
-    delay(500);
+    unsigned long serialWaitStart = millis();
+    while (!Serial && (millis() - serialWaitStart) < 2500)
+    {
+        delay(10);
+    }
+    Serial.println("[BOOT] Robot setup starting...");
 
     Wire.begin();
     setupPins();
@@ -65,9 +72,17 @@ void Robot::setup()
         qtrSensors.setup();
     }
 
-    imu.begin();
-    imu.calibrateGyro();
-    imu.resetHeading();
+    imuAvailable = imu.begin();
+    if (imuAvailable)
+    {
+        imu.calibrateGyro();
+        imu.resetHeading();
+        Serial.println("IMU initialized successfully.");
+    }
+    else
+    {
+        Serial.println("IMU init failed. Continuing without IMU updates.");
+    }
     headingController.reset();
     previousStrategy = currentStrategy;
     resetIMUStrategyState();
@@ -83,7 +98,18 @@ void Robot::update()
     {
         qtrSensors.read();
     }
-    imu.read();
+    if (imuAvailable)
+    {
+        imu.read();
+
+        unsigned long nowMs = millis();
+        if ((nowMs - imuLastPrintMs) >= 250)
+        {
+            Serial.print("[IMU] ");
+            imu.printData();
+            imuLastPrintMs = nowMs;
+        }
+    }
 
     updateBehavior();
     updateBatteryBuzzer();

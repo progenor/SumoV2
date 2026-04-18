@@ -117,6 +117,8 @@ private:
     bool imuTargetPreviouslySeen;
     float imuLastHeadingErrorDeg;
     float imuLastPidCorrection;
+    bool imuAvailable;
+    unsigned long imuLastPrintMs;
     bool qtrLineSensorsEnabled;
     int imuLastSeenDirection;
     int imuSearchDirection;

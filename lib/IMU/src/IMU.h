@@ -1,11 +1,12 @@
-#ifndef _IMU_H_
-#define _IMU_H_
+#ifndef TFS_SUMO_V2_BMI323_IMU_H
+#define TFS_SUMO_V2_BMI323_IMU_H
 
 #include <Wire.h>
 #include <Arduino.h>
 
 // I2C address and register definitions
 #define BMI323_I2C_ADDR_1 0x68 // Default I2C address (SDO = GND)
+#define BMI323_I2C_ADDR_2 0x69 // Alternate I2C address (SDO = VDDIO)
 #define CHIP_ID_REG 0x00
 #define ERR_REG 0x01
 #define STATUS_REG 0x02
@@ -40,20 +41,16 @@
 class IMU
 {
 private:
-    float ax;   /**< Accelerometer X-axis in g */
-    float ay;   /**< Accelerometer Y-axis in g */
-    float az;   /**< Accelerometer Z-axis in g */
-    float gx;   /**< Gyroscope X-axis in deg/s */
-    float gy;   /**< Gyroscope Y-axis in deg/s */
-    float gz;   /**< Gyroscope Z-axis in deg/s */
-    float temp; /**< Temperature in C */
-
-    float gyroOffsetX;
-    float gyroOffsetY;
-    float gyroOffsetZ;
-    float headingDeg;
-    unsigned long lastHeadingUpdateMs;
-    bool headingInitialized;
+    float ax;                 /**< Accelerometer X-axis in g */
+    float ay;                 /**< Accelerometer Y-axis in g */
+    float az;                 /**< Accelerometer Z-axis in g */
+    float gx;                 /**< Gyroscope X-axis in deg/s */
+    float gy;                 /**< Gyroscope Y-axis in deg/s */
+    float gz;                 /**< Gyroscope Z-axis in deg/s */
+    float temp;               /**< Temperature in C */
+    float headingDeg;         /**< Integrated yaw heading in deg */
+    float gyroBiasZ;          /**< Gyro Z-axis bias in deg/s */
+    unsigned long lastReadMs; /**< Timestamp of last read() */
 
     // Global I2C address
     uint8_t bmi323_i2c_addr;
@@ -69,6 +66,13 @@ private:
      * @return True if successful, false otherwise.
      */
     bool initializeFeatureEngine();
+
+    /**
+     * @brief Checks if a device ACKs at the given I2C address.
+     * @param addr I2C address to probe.
+     * @return True if device responds, false otherwise.
+     */
+    bool isDevicePresent(uint8_t addr);
 
     /**
      * @brief Reads a 16-bit value from a register on the IMU.
@@ -118,26 +122,25 @@ public:
      */
     bool begin();
 
-    bool calibrateGyro(uint16_t sampleCount = 200, unsigned long sampleDelayMs = 2);
+    /**
+     * @brief Calibrates gyroscope Z-axis bias while stationary.
+     */
+    void calibrateGyro();
 
-    void resetHeading(float heading = 0.0f);
-    void updateHeading(unsigned long nowMs = 0);
+    /**
+     * @brief Resets integrated heading to 0 deg.
+     */
+    void resetHeading();
 
-    float getHeadingDeg() const { return headingDeg; }
-    float getGyroZCalibrated() const { return gz; }
+    /**
+     * @brief Returns current integrated heading in deg.
+     */
+    float getHeadingDeg() const;
 
     /**
      * @brief Reads all sensor data and converts to physical units.
      */
     void read();
-
-    float getAccelX() const { return ax; }
-    float getAccelY() const { return ay; }
-    float getAccelZ() const { return az; }
-    float getGyroX() const { return gx; }
-    float getGyroY() const { return gy; }
-    float getGyroZ() const { return gz; }
-    float getTempC() const { return temp; }
 
     /**
      * @brief Prints the current sensor data to serial in CSV format.
@@ -147,4 +150,4 @@ public:
     void printData();
 };
 
-#endif // _IMU_H_
+#endif // TFS_SUMO_V2_BMI323_IMU_H

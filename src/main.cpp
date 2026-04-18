@@ -9,6 +9,7 @@ ButtonManager buttonManager;
 
 void setup()
 {
+  delay(2000);
   robot.setup();
   buttonManager.setup();
 }

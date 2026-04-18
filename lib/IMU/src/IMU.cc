@@ -5,8 +5,9 @@
  */
 IMU::IMU()
     : ax(0.0f), ay(0.0f), az(0.0f), gx(0.0f), gy(0.0f), gz(0.0f), temp(0.0f),
-      gyroOffsetX(0.0f), gyroOffsetY(0.0f), gyroOffsetZ(0.0f), headingDeg(0.0f),
-      lastHeadingUpdateMs(0), headingInitialized(false), bmi323_i2c_addr(BMI323_I2C_ADDR_1) {}
+      headingDeg(0.0f), gyroBiasZ(0.0f), lastReadMs(0), bmi323_i2c_addr(BMI323_I2C_ADDR_1)
+{
+}
 
 /**
  * @brief Initializes the IMU and configures accelerometer/gyroscope.
@@ -17,76 +18,45 @@ bool IMU::begin()
     return initBMI323();
 }
 
-bool IMU::calibrateGyro(uint16_t sampleCount, unsigned long sampleDelayMs)
+void IMU::calibrateGyro()
 {
-    if (sampleCount == 0)
-    {
-        return false;
-    }
-
-    float sumX = 0.0f;
-    float sumY = 0.0f;
+    const int samples = 150;
     float sumZ = 0.0f;
+    int validSamples = 0;
 
-    for (uint16_t i = 0; i < sampleCount; ++i)
+    for (int i = 0; i < samples; i++)
     {
-        uint16_t rawGyrX = readRegister16(GYR_DATA_X_REG);
-        uint16_t rawGyrY = readRegister16(GYR_DATA_Y_REG);
         uint16_t rawGyrZ = readRegister16(GYR_DATA_Z_REG);
-
-        sumX += convertGyroData(rawGyrX);
-        sumY += convertGyroData(rawGyrY);
-        sumZ += convertGyroData(rawGyrZ);
-
-        if (sampleDelayMs > 0)
+        float z = convertGyroData(rawGyrZ);
+        if (!isnan(z))
         {
-            delay(sampleDelayMs);
+            sumZ += z;
+            validSamples++;
         }
+        delay(4);
     }
 
-    gyroOffsetX = sumX / static_cast<float>(sampleCount);
-    gyroOffsetY = sumY / static_cast<float>(sampleCount);
-    gyroOffsetZ = sumZ / static_cast<float>(sampleCount);
-    return true;
+    if (validSamples > 0)
+    {
+        gyroBiasZ = sumZ / validSamples;
+    }
+    else
+    {
+        gyroBiasZ = 0.0f;
+    }
+
+    lastReadMs = millis();
 }
 
-void IMU::resetHeading(float heading)
+void IMU::resetHeading()
 {
-    headingDeg = heading;
-    headingInitialized = false;
-    lastHeadingUpdateMs = millis();
+    headingDeg = 0.0f;
+    lastReadMs = millis();
 }
 
-void IMU::updateHeading(unsigned long nowMs)
+float IMU::getHeadingDeg() const
 {
-    if (nowMs == 0)
-    {
-        nowMs = millis();
-    }
-
-    if (!headingInitialized)
-    {
-        headingInitialized = true;
-        lastHeadingUpdateMs = nowMs;
-        return;
-    }
-
-    if (nowMs <= lastHeadingUpdateMs)
-    {
-        return;
-    }
-
-    float deltaSeconds = static_cast<float>(nowMs - lastHeadingUpdateMs) / 1000.0f;
-    headingDeg += gz * deltaSeconds;
-    while (headingDeg > 180.0f)
-    {
-        headingDeg -= 360.0f;
-    }
-    while (headingDeg < -180.0f)
-    {
-        headingDeg += 360.0f;
-    }
-    lastHeadingUpdateMs = nowMs;
+    return headingDeg;
 }
 
 /**
@@ -95,26 +65,44 @@ void IMU::updateHeading(unsigned long nowMs)
  */
 bool IMU::initBMI323()
 {
-    // Try both possible I2C addresses
-    Serial.print("Testing I2C address 0x");
-    Serial.println(BMI323_I2C_ADDR_1, HEX);
-    uint16_t chipID = readRegister16(CHIP_ID_REG, BMI323_I2C_ADDR_1);
-    if ((chipID & 0xFF) == 0x43 || (chipID & 0xFF) == 0x41)
+    const uint8_t candidateAddrs[] = {BMI323_I2C_ADDR_1, BMI323_I2C_ADDR_2};
+    bool found = false;
+    uint16_t chipID = 0xFFFF;
+
+    for (uint8_t i = 0; i < 2; i++)
     {
-        bmi323_i2c_addr = BMI323_I2C_ADDR_1;
-        Serial.println("Found BMI323 at address 0x68");
+        uint8_t addr = candidateAddrs[i];
+        Serial.print("Probing I2C address 0x");
+        Serial.println(addr, HEX);
+
+        if (!isDevicePresent(addr))
+        {
+            continue;
+        }
+
+        chipID = readRegister16(CHIP_ID_REG, addr);
+        if ((chipID & 0xFF) == 0x43 || (chipID & 0xFF) == 0x41)
+        {
+            bmi323_i2c_addr = addr;
+            found = true;
+            break;
+        }
     }
-    else
+
+    if (!found)
     {
-        Serial.print("Invalid chip ID: 0x");
+        Serial.print("BMI323 not found. Last chip ID read: 0x");
         Serial.println(chipID, HEX);
         return false;
     }
 
+    Serial.print("Found BMI323 at address 0x");
+    Serial.println(bmi323_i2c_addr, HEX);
+
     // Reset sensor
     Serial.println("Performing soft reset...");
     writeRegister16(CMD_REG, SOFT_RESET_CMD);
-    delay(5); // Wait for reset (datasheet: ~2ms)
+    delay(50); // Give the sensor enough time to reboot and settle
 
     // Set up feature engine
     Serial.println("Initializing feature engine...");
@@ -190,14 +178,22 @@ uint16_t IMU::readRegister16(uint8_t reg, uint8_t addr)
 {
     if (addr == 0)
         addr = bmi323_i2c_addr;
+
     Wire.beginTransmission(addr);
     Wire.write(reg);
     int error = Wire.endTransmission(false); // Restart
     if (error != 0)
     {
-        Serial.print("I2C write error: ");
-        Serial.println(error);
-        return 0xFFFF;
+        // Some cores/devices are more tolerant with STOP then a fresh read transaction.
+        Wire.beginTransmission(addr);
+        Wire.write(reg);
+        error = Wire.endTransmission(true);
+        if (error != 0)
+        {
+            Serial.print("I2C write error: ");
+            Serial.println(error);
+            return 0xFFFF;
+        }
     }
 
     // Request 4 bytes: 2 dummy bytes + 2 data bytes (LSB, MSB)
@@ -214,6 +210,13 @@ uint16_t IMU::readRegister16(uint8_t reg, uint8_t addr)
     uint8_t lsb = Wire.read();
     uint8_t msb = Wire.read();
     return (msb << 8) | lsb;
+}
+
+bool IMU::isDevicePresent(uint8_t addr)
+{
+    Wire.beginTransmission(addr);
+    int error = Wire.endTransmission();
+    return error == 0;
 }
 
 /**
@@ -279,6 +282,13 @@ float IMU::convertTempData(uint16_t rawData)
  */
 void IMU::read()
 {
+    unsigned long nowMs = millis();
+    float dt = 0.0f;
+    if (lastReadMs != 0 && nowMs >= lastReadMs)
+    {
+        dt = (nowMs - lastReadMs) / 1000.0f;
+    }
+
     // Read sensor data
     uint16_t accX = readRegister16(ACC_DATA_X_REG);
     uint16_t accY = readRegister16(ACC_DATA_Y_REG);
@@ -292,12 +302,26 @@ void IMU::read()
     ax = convertAccelData(accX);
     ay = convertAccelData(accY);
     az = convertAccelData(accZ);
-    gx = convertGyroData(gyrX) - gyroOffsetX;
-    gy = convertGyroData(gyrY) - gyroOffsetY;
-    gz = convertGyroData(gyrZ) - gyroOffsetZ;
+    gx = convertGyroData(gyrX);
+    gy = convertGyroData(gyrY);
+    gz = convertGyroData(gyrZ);
     temp = convertTempData(tempRaw);
 
-    updateHeading();
+    if (dt > 0.0f && !isnan(gz))
+    {
+        headingDeg += (gz - gyroBiasZ) * dt;
+
+        if (headingDeg > 180.0f)
+        {
+            headingDeg -= 360.0f;
+        }
+        else if (headingDeg < -180.0f)
+        {
+            headingDeg += 360.0f;
+        }
+    }
+
+    lastReadMs = nowMs;
 }
 
 /**
