@@ -42,9 +42,9 @@
 #define IR5_PIN 10
 
 // Robot behavior uses a 3-sensor subset.
-#define SENSOR_LEFT IR3_PIN
-#define SENSOR_CENTER IR2_PIN
-#define SENSOR_RIGHT IR1_PIN
+#define SENSOR_LEFT IR5_PIN
+#define SENSOR_CENTER IR4_PIN
+#define SENSOR_RIGHT IR3_PIN
 
 // Extra two digital sensors mapped as QTR-compatible inputs.
 #define QTR_LEFT IR4_PIN

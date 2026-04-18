@@ -16,6 +16,7 @@ public:
     void left(int pwm = 128);
     void right(int pwm = 128);
     void stop();
+    void testDirections();
 
 private:
     void drive(int pwmLeft, int pwmRight, bool dirLeftForward, bool dirRightForward);

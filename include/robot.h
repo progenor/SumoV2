@@ -19,6 +19,7 @@ public:
 
     void setup();
     void update();
+    void testDirections();
 
     SpeedConfig &getSpeedConfig();
     int *getIRValues();

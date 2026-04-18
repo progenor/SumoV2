@@ -31,26 +31,39 @@ void Motor::drive(int pwmLeft, int pwmRight, bool dirLeftForward, bool dirRightF
 
 void Motor::forward(int pwm)
 {
-    drive(pwm, pwm, true, true);
+    drive(pwm, pwm, true, false);
 }
 
 void Motor::backward(int pwm)
-{
-    drive(pwm, pwm, false, false);
-}
-
-void Motor::left(int pwm)
 {
     drive(pwm, pwm, false, true);
 }
 
 void Motor::right(int pwm)
 {
-    drive(pwm, pwm, true, false);
+    drive(pwm, pwm, true, true);
+}
+
+void Motor::left(int pwm)
+{
+    drive(pwm, pwm, false, false);
 }
 
 void Motor::stop()
 {
     analogWrite(PWM1, 0);
     analogWrite(PWM2, 0);
+}
+
+void Motor::testDirections()
+{
+    forward(128);
+    delay(1000);
+    backward(128);
+    delay(1000);
+    left(128);
+    delay(1000);
+    right(128);
+    delay(1000);
+    stop();
 }

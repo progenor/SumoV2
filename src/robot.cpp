@@ -9,7 +9,7 @@ Robot::Robot()
       currentMenuScreen(MENU_SCREEN_MAIN),
       paused(false),
       currentSpeedLevel(SPEED_LEVEL_LOW),
-      currentStrategy(STRATEGY_SPEED),
+      currentStrategy(STRATEGY_STING),
       currentMotorDirection(DIRECTION_STOP),
       buzzerMode(BUZZER_MODE_IDLE),
       buzzerOutputOn(false),
@@ -54,6 +54,11 @@ void Robot::update()
     {
         display.displayIR(getIRValues(), IRCount);
     }
+}
+
+void Robot::testDirections()
+{
+    motor.testDirections();
 }
 
 void Robot::setBuzzerOutput(bool on)

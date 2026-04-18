@@ -13,17 +13,8 @@ void setup()
   buttonManager.setup();
 }
 
-void loop()
+void Screen()
 {
-  buttonManager.update();
-  KeypadAction action = buttonManager.getAction();
-  if (action != KEYPAD_ACTION_NONE)
-  {
-    robot.handleKeypadAction(action);
-  }
-
-  robot.update();
-
   if (robot.getMode() == MODE_MENU)
   {
     int currentScreen = robot.getCurrentMenuScreen();
@@ -60,6 +51,22 @@ void loop()
       break;
     }
   }
+}
+
+void loop()
+{
+  buttonManager.update();
+  KeypadAction action = buttonManager.getAction();
+  if (action != KEYPAD_ACTION_NONE)
+  {
+    robot.handleKeypadAction(action);
+  }
+
+  // robot.testDirections();
+
+  robot.update();
+
+  Screen();
 
   delay(5);
 }
