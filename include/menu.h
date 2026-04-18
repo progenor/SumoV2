@@ -6,10 +6,11 @@
 #define MENU_SCREEN_SPEED 1
 #define MENU_SCREEN_IR 2
 #define MENU_SCREEN_STRATEGY 3
-#define MENU_SCREEN_DIRECTION 4
-#define MENU_SCREEN_BATTERY 5
-#define MENU_SCREEN_TEMP 6
-#define MENU_SCREEN_COUNT 7
+#define MENU_SCREEN_START_ROUTINE 4
+#define MENU_SCREEN_DIRECTION 5
+#define MENU_SCREEN_BATTERY 6
+#define MENU_SCREEN_TEMP 7
+#define MENU_SCREEN_COUNT 8
 
 // Robot mode enumeration
 enum RobotMode
@@ -40,7 +41,7 @@ struct SpeedPreset
 // Preset configurations
 static const SpeedPreset SPEED_PRESETS[SPEED_LEVEL_COUNT] = {
     // LOW
-    {140, 50, 20, 10},
+    {40, 20, 20, 10},
     // MEDIUM
     {200, 50, 25, 15},
     // HIGH
@@ -54,6 +55,15 @@ enum Strategy
     STRATEGY_RUN = 2,
     STRATEGY_IMU_HOLD = 3,
     STRATEGY_COUNT = 4
+};
+
+enum StartRoutine
+{
+    START_ROUTINE_STRAIGHT = 0,
+    START_ROUTINE_LEFT_ARC = 1,
+    START_ROUTINE_RIGHT_ARC = 2,
+    START_ROUTINE_SPIN_WAIT = 3,
+    START_ROUTINE_COUNT = 4
 };
 
 // Motor direction enumeration

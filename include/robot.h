@@ -11,6 +11,7 @@
 #include "menu.h"
 #include "button.h"
 #include "IMU.h"
+#include "HeadingController.h"
 
 class Robot
 {
@@ -44,7 +45,13 @@ public:
     void setStrategy(int strategy);
     void cycleStrategy();
 
+    int getCurrentStartRoutine() const;
+    void setStartRoutine(int startRoutine);
+    void cycleStartRoutine();
+
     int getCurrentDirection() const;
+    int getCurrentLeftMotorPWM() const;
+    int getCurrentRightMotorPWM() const;
 
     void handleKeypadAction(KeypadAction action);
 
@@ -56,6 +63,17 @@ public:
     float getTemperatureC();
 
 private:
+    void setMotorPWM(int leftPWM, int rightPWM);
+    enum IMUState
+    {
+        IMU_STATE_START_DELAY,
+        IMU_STATE_START_ROUTINE,
+        IMU_STATE_SEARCH,
+        IMU_STATE_ATTACK,
+        IMU_STATE_EVASION,
+        IMU_STATE_EDGE_RECOVERY
+    };
+
     enum BuzzerMode
     {
         BUZZER_MODE_IDLE,
@@ -68,13 +86,17 @@ private:
     IRSensors irSensors;
     QTRSensors qtrSensors;
     IMU imu;
+    HeadingController headingController;
 
     RobotMode currentMode;
     int currentMenuScreen;
     bool paused;
     int currentSpeedLevel;
     int currentStrategy;
+    int currentStartRoutine;
     int currentMotorDirection;
+    int lastLeftMotorPWM;
+    int lastRightMotorPWM;
 
     BuzzerMode buzzerMode;
     bool buzzerOutputOn;
@@ -83,16 +105,46 @@ private:
     unsigned long buzzerLastToggleMs;
     int buzzerTransitionsRemaining;
 
+    bool imuAttackLocked;
+    float imuAttackHeadingDeg;
+    unsigned long imuPhaseStartMs;
+    int imuEvasionStep;
+    IMUState imuState;
+    int previousStrategy;
+    unsigned long imuStartRoutineStartMs;
+    unsigned long imuStartDelayStartMs;
+    unsigned long imuTargetLostMs;
+    bool imuTargetPreviouslySeen;
+    float imuLastHeadingErrorDeg;
+    float imuLastPidCorrection;
+    bool qtrLineSensorsEnabled;
+    int imuLastSeenDirection;
+    int imuSearchDirection;
+    unsigned long imuSearchPhaseStartMs;
+    bool imuSearchForwardPulse;
+
     void updateBehavior();
     void updateBehavior_Speed();
     void updateBehavior_Sting();
     void updateBehavior_Run();
     void updateBehavior_IMUHold();
+    void resetIMUStrategyState();
+    void updateIMUStateMachine(int *irValues, int *qtrValues, unsigned long nowMs);
+    void runIMUStartDelay(unsigned long nowMs);
+    void runIMUStartRoutine(unsigned long nowMs);
+    void runIMUSearch(int *irValues);
+    void runIMUAttack(int *irValues, unsigned long nowMs);
+    void runIMUEvasion(unsigned long nowMs);
+    void runIMUEdgeRecovery(int *qtrValues, unsigned long nowMs);
+    unsigned long getSelectedStartDelayMs() const;
+    void beginIMUSearchPhase(unsigned long nowMs);
 
     void applySpeedPreset(int level);
     void cycleMenuScreenBackward();
     void cycleSpeedLevelBackward();
     void cycleStrategyBackward();
+    void cycleStartRoutineBackward();
+    void cycleStartDelayBackward();
 
     void updateBatteryBuzzer();
     void setBuzzerOutput(bool on);

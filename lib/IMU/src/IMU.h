@@ -48,6 +48,13 @@ private:
     float gz;   /**< Gyroscope Z-axis in deg/s */
     float temp; /**< Temperature in C */
 
+    float gyroOffsetX;
+    float gyroOffsetY;
+    float gyroOffsetZ;
+    float headingDeg;
+    unsigned long lastHeadingUpdateMs;
+    bool headingInitialized;
+
     // Global I2C address
     uint8_t bmi323_i2c_addr;
 
@@ -110,6 +117,14 @@ public:
      * @return True if initialization successful, false otherwise.
      */
     bool begin();
+
+    bool calibrateGyro(uint16_t sampleCount = 200, unsigned long sampleDelayMs = 2);
+
+    void resetHeading(float heading = 0.0f);
+    void updateHeading(unsigned long nowMs = 0);
+
+    float getHeadingDeg() const { return headingDeg; }
+    float getGyroZCalibrated() const { return gz; }
 
     /**
      * @brief Reads all sensor data and converts to physical units.

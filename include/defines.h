@@ -9,6 +9,10 @@
 #define display_RESET -1
 #define DISPLAY_REFRESH_MS 30 // Display refresh throttle (milliseconds) ~33 FPS
 
+// Feature flags
+// Set to 1 when QTR line sensors are physically installed and wired.
+#define ENABLE_QTR_LINE_SENSORS 0
+
 // TM1 temperature monitor conversion (10k NTC, B=3950)
 #define TEMP_NTC_PULLUP_VOLTAGE 5.0f
 #define TEMP_NTC_PULLUP_RESISTANCE 10000.0f
@@ -34,8 +38,8 @@ struct SpeedConfig
 
     // Constructor with defaults
     SpeedConfig()
-        : attack_speed(250),
-          search_speed(128),
+        : attack_speed(70),
+          search_speed(50),
           turn_speed_aggressive(50),
           turn_speed_moderate(30),
           turn_speed_gentle(15) {}

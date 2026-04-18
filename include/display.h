@@ -48,7 +48,8 @@ public:
     void drawSensorReadingsScreen(int *irValues, int irCount);
     void drawStatusScreen(RobotMode mode, bool isPaused, int currentScreen);
     void drawStrategySelectorScreen(int currentStrategy);
-    void drawDirectionIndicatorScreen(int motorDirection);
+    void drawStartRoutineSelectorScreen(int currentStartRoutine);
+    void drawDirectionIndicatorScreen(int motorDirection, int leftMotorPWM, int rightMotorPWM);
     void drawBatteryVoltageScreen(float batteryVoltage, float adcVoltage, int rawAdc);
     void drawTemperatureScreen(float temperatureC, float sensorVoltage);
 

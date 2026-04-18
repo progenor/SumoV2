@@ -11,6 +11,8 @@ public:
 
     void setup();
 
+    void drive(int pwmLeft, int pwmRight, bool dirLeftForward, bool dirRightForward);
+
     void forward(int pwm = 128);
     void backward(int pwm = 128);
     void left(int pwm = 128);
@@ -19,7 +21,6 @@ public:
     void testDirections();
 
 private:
-    void drive(int pwmLeft, int pwmRight, bool dirLeftForward, bool dirRightForward);
 };
 
 #endif // MOTORS_H

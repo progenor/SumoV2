@@ -3,7 +3,10 @@
 /**
  * @brief Constructs an IMU object with default I2C address.
  */
-IMU::IMU() : ax(0.0f), ay(0.0f), az(0.0f), gx(0.0f), gy(0.0f), gz(0.0f), temp(0.0f), bmi323_i2c_addr(BMI323_I2C_ADDR_1) {}
+IMU::IMU()
+    : ax(0.0f), ay(0.0f), az(0.0f), gx(0.0f), gy(0.0f), gz(0.0f), temp(0.0f),
+      gyroOffsetX(0.0f), gyroOffsetY(0.0f), gyroOffsetZ(0.0f), headingDeg(0.0f),
+      lastHeadingUpdateMs(0), headingInitialized(false), bmi323_i2c_addr(BMI323_I2C_ADDR_1) {}
 
 /**
  * @brief Initializes the IMU and configures accelerometer/gyroscope.
@@ -12,6 +15,78 @@ IMU::IMU() : ax(0.0f), ay(0.0f), az(0.0f), gx(0.0f), gy(0.0f), gz(0.0f), temp(0.
 bool IMU::begin()
 {
     return initBMI323();
+}
+
+bool IMU::calibrateGyro(uint16_t sampleCount, unsigned long sampleDelayMs)
+{
+    if (sampleCount == 0)
+    {
+        return false;
+    }
+
+    float sumX = 0.0f;
+    float sumY = 0.0f;
+    float sumZ = 0.0f;
+
+    for (uint16_t i = 0; i < sampleCount; ++i)
+    {
+        uint16_t rawGyrX = readRegister16(GYR_DATA_X_REG);
+        uint16_t rawGyrY = readRegister16(GYR_DATA_Y_REG);
+        uint16_t rawGyrZ = readRegister16(GYR_DATA_Z_REG);
+
+        sumX += convertGyroData(rawGyrX);
+        sumY += convertGyroData(rawGyrY);
+        sumZ += convertGyroData(rawGyrZ);
+
+        if (sampleDelayMs > 0)
+        {
+            delay(sampleDelayMs);
+        }
+    }
+
+    gyroOffsetX = sumX / static_cast<float>(sampleCount);
+    gyroOffsetY = sumY / static_cast<float>(sampleCount);
+    gyroOffsetZ = sumZ / static_cast<float>(sampleCount);
+    return true;
+}
+
+void IMU::resetHeading(float heading)
+{
+    headingDeg = heading;
+    headingInitialized = false;
+    lastHeadingUpdateMs = millis();
+}
+
+void IMU::updateHeading(unsigned long nowMs)
+{
+    if (nowMs == 0)
+    {
+        nowMs = millis();
+    }
+
+    if (!headingInitialized)
+    {
+        headingInitialized = true;
+        lastHeadingUpdateMs = nowMs;
+        return;
+    }
+
+    if (nowMs <= lastHeadingUpdateMs)
+    {
+        return;
+    }
+
+    float deltaSeconds = static_cast<float>(nowMs - lastHeadingUpdateMs) / 1000.0f;
+    headingDeg += gz * deltaSeconds;
+    while (headingDeg > 180.0f)
+    {
+        headingDeg -= 360.0f;
+    }
+    while (headingDeg < -180.0f)
+    {
+        headingDeg += 360.0f;
+    }
+    lastHeadingUpdateMs = nowMs;
 }
 
 /**
@@ -217,10 +292,12 @@ void IMU::read()
     ax = convertAccelData(accX);
     ay = convertAccelData(accY);
     az = convertAccelData(accZ);
-    gx = convertGyroData(gyrX);
-    gy = convertGyroData(gyrY);
-    gz = convertGyroData(gyrZ);
+    gx = convertGyroData(gyrX) - gyroOffsetX;
+    gy = convertGyroData(gyrY) - gyroOffsetY;
+    gz = convertGyroData(gyrZ) - gyroOffsetZ;
     temp = convertTempData(tempRaw);
+
+    updateHeading();
 }
 
 /**
