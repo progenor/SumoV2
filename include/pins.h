@@ -46,6 +46,7 @@
 #define SENSOR_CENTER IR4_PIN
 #define SENSOR_RIGHT IR3_PIN
 
+void testDriections();
 // Extra two digital sensors mapped as QTR-compatible inputs.
 #define QTR_LEFT IR4_PIN
 #define QTR_RIGHT IR5_PIN
