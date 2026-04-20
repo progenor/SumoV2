@@ -41,6 +41,13 @@ Robot::Robot()
       imuLastPidCorrection(0.0f),
       imuAvailable(false),
       imuLastPrintMs(0),
+    adcCacheValid(false),
+    adcLastSampleMs(0),
+    cachedBatteryRawAdc(0),
+    cachedBatteryAdcVoltage(0.0f),
+    cachedBatteryVoltage(0.0f),
+    cachedTemperatureVoltage(0.0f),
+    cachedTemperatureC(NAN),
       qtrLineSensorsEnabled(ENABLE_QTR_LINE_SENSORS != 0),
       imuLastSeenDirection(1),
       imuSearchDirection(1),
@@ -53,13 +60,17 @@ void Robot::setup()
 {
     Serial.begin(115200);
     unsigned long serialWaitStart = millis();
-    while (!Serial && (millis() - serialWaitStart) < 2500)
+    while (!Serial && (millis() - serialWaitStart) < 300)
     {
-        delay(10);
+        delay(1);
     }
+
+#if DEBUG_ROBOT_BOOT
     Serial.println("[BOOT] Robot setup starting...");
+#endif
 
     Wire.begin();
+    Wire.setClock(400000);
     setupPins();
 
     display.setup();
@@ -77,11 +88,15 @@ void Robot::setup()
     {
         imu.calibrateGyro();
         imu.resetHeading();
+#if DEBUG_ROBOT_BOOT
         Serial.println("IMU initialized successfully.");
+#endif
     }
     else
     {
+#if DEBUG_ROBOT_BOOT
         Serial.println("IMU init failed. Continuing without IMU updates.");
+#endif
     }
     headingController.reset();
     previousStrategy = currentStrategy;
@@ -93,6 +108,9 @@ void Robot::setup()
 
 void Robot::update()
 {
+    unsigned long nowMs = millis();
+    refreshAdcCache(nowMs);
+
     irSensors.read();
     if (qtrLineSensorsEnabled)
     {
@@ -102,13 +120,14 @@ void Robot::update()
     {
         imu.read();
 
-        unsigned long nowMs = millis();
+#if DEBUG_IMU_RUNTIME
         if ((nowMs - imuLastPrintMs) >= 250)
         {
             Serial.print("[IMU] ");
             imu.printData();
             imuLastPrintMs = nowMs;
         }
+#endif
     }
 
     updateBehavior();
@@ -961,19 +980,20 @@ int Robot::getCurrentRightMotorPWM() const
 
 float Robot::getBatteryVoltage()
 {
-    return getBatteryVoltageFromRaw(getBatteryRawAdc());
+    if (!adcCacheValid)
+    {
+        refreshAdcCache(millis());
+    }
+    return cachedBatteryVoltage;
 }
 
 int Robot::getBatteryRawAdc()
 {
-    const int sampleCount = 8;
-    int sum = 0;
-    for (int i = 0; i < sampleCount; i++)
+    if (!adcCacheValid)
     {
-        sum += analogRead(BATTERY_LEVEL_PIN);
+        refreshAdcCache(millis());
     }
-
-    return sum / sampleCount;
+    return cachedBatteryRawAdc;
 }
 
 float Robot::getBatteryAdcVoltageFromRaw(int rawAdc)
@@ -998,40 +1018,80 @@ float Robot::getBatteryVoltageFromRaw(int rawAdc)
 
 float Robot::getTemperatureVoltage()
 {
-    const int sampleCount = 8;
-    int sum = 0;
-    for (int i = 0; i < sampleCount; i++)
+    if (!adcCacheValid)
     {
-        sum += analogRead(TEMP_MONITOR_PIN);
+        refreshAdcCache(millis());
     }
-
-    float rawAdc = static_cast<float>(sum) / sampleCount;
-    return (rawAdc / 4095.0f) * 3.3f;
+    return cachedTemperatureVoltage;
 }
 
 float Robot::getTemperatureC()
 {
-    float voltage = getTemperatureVoltage();
+    if (!adcCacheValid)
+    {
+        refreshAdcCache(millis());
+    }
+    return cachedTemperatureC;
+}
+
+int Robot::sampleAveragedAdc(uint8_t pin)
+{
+    const int sampleCount = 8;
+    int sum = 0;
+    for (int i = 0; i < sampleCount; i++)
+    {
+        sum += analogRead(pin);
+    }
+
+    return sum / sampleCount;
+}
+
+void Robot::refreshAdcCache(unsigned long nowMs)
+{
+    if (adcCacheValid && (nowMs - adcLastSampleMs) < ADC_CACHE_INTERVAL_MS)
+    {
+        return;
+    }
+
+    cachedBatteryRawAdc = sampleAveragedAdc(BATTERY_LEVEL_PIN);
+    cachedBatteryAdcVoltage = getBatteryAdcVoltageFromRaw(cachedBatteryRawAdc);
+    cachedBatteryVoltage = getBatteryVoltageFromRaw(cachedBatteryRawAdc);
+
+    int tempRawAdc = sampleAveragedAdc(TEMP_MONITOR_PIN);
+    cachedTemperatureVoltage = (static_cast<float>(tempRawAdc) / 4095.0f) * 3.3f;
+
+    float voltage = cachedTemperatureVoltage;
 
     if (!isfinite(voltage) || voltage <= 0.0f || voltage >= (TEMP_NTC_PULLUP_VOLTAGE - 0.01f))
     {
-        return NAN;
+        cachedTemperatureC = NAN;
+        adcLastSampleMs = nowMs;
+        adcCacheValid = true;
+        return;
     }
 
     float resistance = TEMP_NTC_PULLUP_RESISTANCE * voltage / (TEMP_NTC_PULLUP_VOLTAGE - voltage);
     if (!isfinite(resistance) || resistance <= 0.0f)
     {
-        return NAN;
+        cachedTemperatureC = NAN;
+        adcLastSampleMs = nowMs;
+        adcCacheValid = true;
+        return;
     }
 
     const float referenceKelvin = TEMP_NTC_REFERENCE_TEMP_C + 273.15f;
     float invTemperature = (1.0f / referenceKelvin) + (1.0f / TEMP_NTC_BETA) * logf(resistance / TEMP_NTC_R25);
     if (!isfinite(invTemperature) || invTemperature <= 0.0f)
     {
-        return NAN;
+        cachedTemperatureC = NAN;
+        adcLastSampleMs = nowMs;
+        adcCacheValid = true;
+        return;
     }
 
-    return (1.0f / invTemperature) - 273.15f;
+    cachedTemperatureC = (1.0f / invTemperature) - 273.15f;
+    adcLastSampleMs = nowMs;
+    adcCacheValid = true;
 }
 
 void Robot::cycleMenuScreenBackward()

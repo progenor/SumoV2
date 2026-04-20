@@ -15,24 +15,53 @@ int durations[] = {
     8, 8, 4, 4,
     2};
 
+static const int MELODY_NOTE_COUNT = sizeof(durations) / sizeof(durations[0]);
+static int melodyIndex = 0;
+static bool melodyPlaying = false;
+static unsigned long nextNoteAtMs = 0;
+
 void playMelody()
 {
-    // Buzzer for sound alerts
-    int size = sizeof(durations) / sizeof(int);
+    melodyIndex = 0;
+    melodyPlaying = true;
+    nextNoteAtMs = 0;
+}
 
-    for (int note = 0; note < size; note++)
+void stopMelody()
+{
+    melodyPlaying = false;
+    melodyIndex = 0;
+    noTone(BUZZER);
+}
+
+bool isMelodyPlaying()
+{
+    return melodyPlaying;
+}
+
+void updateMelody()
+{
+    if (!melodyPlaying)
     {
-        // to calculate the note duration, take one second divided by the note type.
-        // e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-        int duration = 1000 / durations[note];
-        tone(BUZZER, melody[note], duration);
-
-        // to distinguish the notes, set a minimum time between them.
-        // the note's duration + 30% seems to work well:
-        int pauseBetweenNotes = duration * 1.30;
-        delay(pauseBetweenNotes);
-
-        // stop the tone playing:
-        noTone(BUZZER);
+        return;
     }
+
+    unsigned long nowMs = millis();
+    if (nextNoteAtMs != 0 && nowMs < nextNoteAtMs)
+    {
+        return;
+    }
+
+    if (melodyIndex >= MELODY_NOTE_COUNT)
+    {
+        stopMelody();
+        return;
+    }
+
+    int durationMs = 1000 / durations[melodyIndex];
+    tone(BUZZER, melody[melodyIndex], durationMs);
+
+    int pauseBetweenNotesMs = (durationMs * 13) / 10;
+    nextNoteAtMs = nowMs + pauseBetweenNotesMs;
+    melodyIndex++;
 }

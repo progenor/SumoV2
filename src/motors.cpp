@@ -14,6 +14,8 @@ void Motor::setup()
     pinMode(DIR2, OUTPUT);
 
     analogReadResolution(12);
+    analogWriteRange(255);
+    analogWriteFreq(5000);
 
     digitalWrite(ENM1, HIGH);
     digitalWrite(ENM2, HIGH);
