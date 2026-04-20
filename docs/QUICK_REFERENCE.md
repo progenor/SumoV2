@@ -30,15 +30,17 @@ Battery monitor divider from schematic:
 - top resistor `R25 = 56k`
 - bottom resistor `R26 = 10k`
 - `Vadc = Vbat * (10 / 66)`
-- calibrated firmware model: `Vbat = max(0, (Vadc - BATTERY_ADC_OFFSET_V)) * 6.6`
+- calibrated firmware model currently used in code: `Vbat = max(0, (Vadc + 0.12)) * 6.6`
 
 The battery menu screen displays live voltage and an approximate 3S percentage at `MENU_SCREEN_BATTERY`.
+
+Battery and temperature ADC values are cached and refreshed every `1000 ms` (`ADC_CACHE_INTERVAL_MS`).
 
 ## Battery Buzzer Alerts
 
 - Below `6.0V`: buzzer alerts are disabled and reset, so USB power does not trigger warnings.
-- Below `12.3V`: warning pattern of `3` beeps, each `500ms`.
-- Below `11.4V`: continuous buzzer alarm.
+- Crossing below `12.2V`: warning pattern of `3` beeps, each `500ms`.
+- Below `11.3V`: continuous buzzer alarm.
 
 ## Temperature Screen
 
@@ -75,6 +77,44 @@ Speed presets are in `include/menu.h` (`SPEED_PRESETS`).
    - `updateBehavior_IMUHold()`
 3. If motor direction is inverted on hardware, adjust `Motor::drive()` direction flags in `src/motors.cpp`.
 4. If pin routing changes between PCBs, update `include/pins.h` only.
+
+## Runtime Cadence and Tuning
+
+- Control task runs every `2 ms` (`CONTROL_TASK_INTERVAL_MS`).
+- UI redraw task runs every `30 ms` (`UI_TASK_INTERVAL_MS`).
+- Melody playback is non-blocking and progresses via `updateMelody()`.
+- I2C is configured to `400 kHz` after startup.
+- Motor PWM is configured to `5 kHz` with 8-bit range (`0..255`).
+
+## Fault Tolerance
+
+- If MCP23017 expander init fails, firmware skips keypad reads and continues running.
+- Expander interrupt checks return no event while unavailable instead of halting the robot.
+
+## Debug Gates
+
+- `DEBUG_ROBOT_BOOT`
+- `DEBUG_IMU_INIT`
+- `DEBUG_IMU_RUNTIME`
+- `DEBUG_I2C_ERRORS`
+
+## Competition Mode (Match Day)
+
+Use this checklist before a real match to minimize noise and runtime overhead:
+
+1. Disable all debug output in `include/defines.h`:
+   - `DEBUG_ROBOT_BOOT = 0`
+   - `DEBUG_IMU_INIT = 0`
+   - `DEBUG_IMU_RUNTIME = 0`
+   - `DEBUG_I2C_ERRORS = 0`
+2. Keep scheduler cadence at current tuned values:
+   - `CONTROL_TASK_INTERVAL_MS = 2`
+   - `UI_TASK_INTERVAL_MS = 30`
+   - `ADC_CACHE_INTERVAL_MS = 1000`
+3. Keep motor PWM at `5 kHz` unless motor heat/noise testing suggests otherwise.
+4. Keep I2C at `400 kHz` if stable on your board.
+5. If I2C communication glitches appear under match conditions, temporarily drop to `100 kHz` in `Robot::setup()` (`Wire.setClock(100000)`) for maximum bus margin.
+6. If you want completely silent startup, disable melody start from robot setup (or gate it with a compile-time flag).
 
 ## Data/Control Diagram
 
