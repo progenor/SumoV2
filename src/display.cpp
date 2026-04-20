@@ -16,7 +16,6 @@ bool Display::setup()
     display.clearDisplay();
     display.setTextColor(1);
     display.display();
-    display.setRotation(2);
     return true;
 }
 
