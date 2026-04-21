@@ -43,9 +43,9 @@ static const SpeedPreset SPEED_PRESETS[SPEED_LEVEL_COUNT] = {
     // LOW
     {60, 40, 40, 10},
     // MEDIUM
-    {128, 50, 50, 15},
+    {128, 100, 110, 15},
     // HIGH
-    {255, 50, 40, 25}};
+    {255, 90, 100, 25}};
 
 // Strategy enumeration
 enum Strategy

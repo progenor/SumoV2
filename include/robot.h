@@ -133,6 +133,8 @@ private:
     int imuSearchDirection;
     unsigned long imuSearchPhaseStartMs;
     bool imuSearchForwardPulse;
+    unsigned long stingRightCommitUntilMs;
+    int stingCommittedTurnDirection;
 
     void updateBehavior();
     void updateBehavior_Speed();

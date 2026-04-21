@@ -10,6 +10,7 @@ static const unsigned long IMU_EVASION_BACKUP_MS = 220;
 static const unsigned long IMU_EVASION_TURN_MS = 160;
 static const unsigned long IMU_SEARCH_PHASE_MS = 220;
 static const unsigned long IMU_SEARCH_PULSE_MS = 80;
+static const unsigned long STING_TURN_COMMIT_MS = 50;
 
 Robot::Robot()
     : currentMode(MODE_MENU),
@@ -52,7 +53,9 @@ Robot::Robot()
       imuLastSeenDirection(1),
       imuSearchDirection(1),
       imuSearchPhaseStartMs(0),
-      imuSearchForwardPulse(false)
+      imuSearchForwardPulse(false),
+      stingRightCommitUntilMs(0),
+      stingCommittedTurnDirection(1)
 {
 }
 
@@ -295,28 +298,52 @@ void Robot::updateBehavior_Sting()
     {
         motor.stop();
         currentMotorDirection = DIRECTION_STOP;
+        stingRightCommitUntilMs = 0;
+        stingCommittedTurnDirection = 1;
         return;
     }
 
+    unsigned long nowMs = millis();
     int *irValues = irSensors.getAllValues();
 
     if (irValues[1] == 1)
     {
+        stingRightCommitUntilMs = 0;
+        stingCommittedTurnDirection = 1;
         motor.forward(speedConfig.attack_speed);
         currentMotorDirection = DIRECTION_FORWARD;
     }
+    else if (nowMs < stingRightCommitUntilMs)
+    {
+        if (stingCommittedTurnDirection < 0)
+        {
+            motor.left(speedConfig.turn_speed_moderate);
+            currentMotorDirection = DIRECTION_LEFT;
+        }
+        else
+        {
+            motor.right(speedConfig.turn_speed_moderate);
+            currentMotorDirection = DIRECTION_RIGHT;
+        }
+    }
     else if (irValues[0] == 1)
     {
+        stingCommittedTurnDirection = -1;
+        stingRightCommitUntilMs = nowMs + STING_TURN_COMMIT_MS;
         motor.left(speedConfig.turn_speed_moderate);
         currentMotorDirection = DIRECTION_LEFT;
     }
     else if (irValues[2] == 1)
     {
+        stingCommittedTurnDirection = 1;
+        stingRightCommitUntilMs = nowMs + STING_TURN_COMMIT_MS;
         motor.right(speedConfig.turn_speed_moderate);
         currentMotorDirection = DIRECTION_RIGHT;
     }
     else
     {
+        stingCommittedTurnDirection = 1;
+        stingRightCommitUntilMs = nowMs + STING_TURN_COMMIT_MS;
         motor.right(speedConfig.search_speed);
         currentMotorDirection = DIRECTION_RIGHT;
     }
