@@ -10,6 +10,7 @@ static const unsigned long IMU_EVASION_BACKUP_MS = 220;
 static const unsigned long IMU_EVASION_TURN_MS = 160;
 static const unsigned long IMU_SEARCH_PHASE_MS = 220;
 static const unsigned long IMU_SEARCH_PULSE_MS = 80;
+static const unsigned long IMU_ATTACK_RECOIL_MS = 40;
 static const unsigned long STING_TURN_COMMIT_MS = 50;
 
 Robot::Robot()
@@ -29,6 +30,7 @@ Robot::Robot()
       buzzerLastToggleMs(0),
       buzzerTransitionsRemaining(0),
       imuAttackLocked(false),
+      imuAttackRecoilStartMs(0),
       imuAttackHeadingDeg(0.0f),
       imuPhaseStartMs(0),
       imuEvasionStep(0),
@@ -342,8 +344,6 @@ void Robot::updateBehavior_Sting()
     }
     else
     {
-        stingCommittedTurnDirection = 1;
-        stingRightCommitUntilMs = nowMs + STING_TURN_COMMIT_MS;
         motor.right(speedConfig.search_speed);
         currentMotorDirection = DIRECTION_RIGHT;
     }
@@ -401,6 +401,7 @@ void Robot::updateBehavior_IMUHold()
 void Robot::resetIMUStrategyState()
 {
     imuAttackLocked = false;
+    imuAttackRecoilStartMs = 0;
     imuAttackHeadingDeg = imu.getHeadingDeg();
     imuPhaseStartMs = 0;
     imuEvasionStep = 0;
@@ -625,6 +626,23 @@ void Robot::runIMUAttack(int *irValues, unsigned long nowMs)
 
         if (!imuAttackLocked)
         {
+            if (imuAttackRecoilStartMs == 0)
+            {
+                imuAttackRecoilStartMs = nowMs;
+            }
+
+            if ((nowMs - imuAttackRecoilStartMs) < IMU_ATTACK_RECOIL_MS)
+            {
+                motor.backward(speedConfig.attack_speed);
+                setMotorPWM(speedConfig.attack_speed, speedConfig.attack_speed);
+                currentMotorDirection = DIRECTION_BACKWARD;
+                return;
+            }
+        }
+
+        imuAttackRecoilStartMs = 0;
+        if (!imuAttackLocked)
+        {
             imuAttackHeadingDeg = imu.getHeadingDeg();
             headingController.reset();
             imuAttackLocked = true;
@@ -643,6 +661,7 @@ void Robot::runIMUAttack(int *irValues, unsigned long nowMs)
     }
 
     imuAttackLocked = false;
+    imuAttackRecoilStartMs = 0;
     imuLastHeadingErrorDeg = 0.0f;
     imuLastPidCorrection = 0.0f;
     if (imuTargetLostMs == 0)

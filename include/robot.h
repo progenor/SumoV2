@@ -106,6 +106,7 @@ private:
     int buzzerTransitionsRemaining;
 
     bool imuAttackLocked;
+    unsigned long imuAttackRecoilStartMs;
     float imuAttackHeadingDeg;
     unsigned long imuPhaseStartMs;
     int imuEvasionStep;
