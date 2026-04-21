@@ -1,5 +1,5 @@
 #include "IMU.h"
-#include "defines.h"
+#include "../../../include/defines.h"
 
 /**
  * @brief Constructs an IMU object with default I2C address.

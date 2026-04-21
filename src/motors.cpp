@@ -31,12 +31,12 @@ void Motor::drive(int pwmLeft, int pwmRight, bool dirLeftForward, bool dirRightF
     analogWrite(PWM2, constrain(pwmRight, 0, 255));
 }
 
-void Motor::forward(int pwm)
+void Motor::backward(int pwm)
 {
     drive(pwm, pwm, true, false);
 }
 
-void Motor::backward(int pwm)
+void Motor::forward(int pwm)
 {
     drive(pwm, pwm, false, true);
 }
