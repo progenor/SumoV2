@@ -307,12 +307,12 @@ void Robot::updateBehavior_Sting()
     }
     else if (irValues[0] == 1)
     {
-        motor.left(speedConfig.attack_speed);
+        motor.left(speedConfig.turn_speed_moderate);
         currentMotorDirection = DIRECTION_LEFT;
     }
     else if (irValues[2] == 1)
     {
-        motor.right(speedConfig.attack_speed);
+        motor.right(speedConfig.turn_speed_moderate);
         currentMotorDirection = DIRECTION_RIGHT;
     }
     else
