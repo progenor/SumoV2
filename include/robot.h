@@ -106,6 +106,7 @@ private:
     int buzzerTransitionsRemaining;
 
     bool imuAttackLocked;
+    unsigned long imuAttackRecoilStartMs;
     float imuAttackHeadingDeg;
     unsigned long imuPhaseStartMs;
     int imuEvasionStep;
@@ -119,11 +120,22 @@ private:
     float imuLastPidCorrection;
     bool imuAvailable;
     unsigned long imuLastPrintMs;
+
+    bool adcCacheValid;
+    unsigned long adcLastSampleMs;
+    int cachedBatteryRawAdc;
+    float cachedBatteryAdcVoltage;
+    float cachedBatteryVoltage;
+    float cachedTemperatureVoltage;
+    float cachedTemperatureC;
+
     bool qtrLineSensorsEnabled;
     int imuLastSeenDirection;
     int imuSearchDirection;
     unsigned long imuSearchPhaseStartMs;
     bool imuSearchForwardPulse;
+    unsigned long stingRightCommitUntilMs;
+    int stingCommittedTurnDirection;
 
     void updateBehavior();
     void updateBehavior_Speed();
@@ -153,6 +165,9 @@ private:
     void startWarningPattern();
     void startContinuousAlarm();
     void stopBuzzerAlarm();
+
+    int sampleAveragedAdc(uint8_t pin);
+    void refreshAdcCache(unsigned long nowMs);
 };
 
 #endif // ROBOT_H

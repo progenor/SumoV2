@@ -1,4 +1,5 @@
 #include "IMU.h"
+#include "../../../include/defines.h"
 
 /**
  * @brief Constructs an IMU object with default I2C address.
@@ -72,8 +73,10 @@ bool IMU::initBMI323()
     for (uint8_t i = 0; i < 2; i++)
     {
         uint8_t addr = candidateAddrs[i];
+#if DEBUG_IMU_INIT
         Serial.print("Probing I2C address 0x");
         Serial.println(addr, HEX);
+#endif
 
         if (!isDevicePresent(addr))
         {
@@ -91,29 +94,41 @@ bool IMU::initBMI323()
 
     if (!found)
     {
+#if DEBUG_IMU_INIT
         Serial.print("BMI323 not found. Last chip ID read: 0x");
         Serial.println(chipID, HEX);
+#endif
         return false;
     }
 
+#if DEBUG_IMU_INIT
     Serial.print("Found BMI323 at address 0x");
     Serial.println(bmi323_i2c_addr, HEX);
+#endif
 
     // Reset sensor
+#if DEBUG_IMU_INIT
     Serial.println("Performing soft reset...");
+#endif
     writeRegister16(CMD_REG, SOFT_RESET_CMD);
     delay(50); // Give the sensor enough time to reboot and settle
 
     // Set up feature engine
+#if DEBUG_IMU_INIT
     Serial.println("Initializing feature engine...");
+#endif
     if (!initializeFeatureEngine())
     {
+#if DEBUG_IMU_INIT
         Serial.println("Feature engine setup failed");
+#endif
         return false;
     }
 
     // Configure accelerometer and gyroscope
+#if DEBUG_IMU_INIT
     Serial.println("Configuring accelerometer and gyroscope...");
+#endif
     writeRegister16(ACC_CONF_REG, ACC_CONF_NORMAL_100HZ_8G);
     writeRegister16(GYR_CONF_REG, GYR_CONF_NORMAL_100HZ_2000DPS);
     delay(50); // Wait for configuration to settle
@@ -153,18 +168,24 @@ bool IMU::initializeFeatureEngine()
         uint8_t errorStatus = featureIO1Status & 0x0F;
         if (errorStatus == 0x01)
         {
+#if DEBUG_IMU_INIT
             Serial.println("Feature engine initialized successfully");
+#endif
             return true;
         }
         if (errorStatus == 0x03)
         {
+#if DEBUG_IMU_INIT
             Serial.println("Feature engine error");
+#endif
             return false;
         }
         timeout++;
     } while ((featureIO1Status & 0x0F) == 0x00 && timeout < 50);
 
+#if DEBUG_IMU_INIT
     Serial.println("Feature engine timeout");
+#endif
     return false;
 }
 
@@ -190,8 +211,10 @@ uint16_t IMU::readRegister16(uint8_t reg, uint8_t addr)
         error = Wire.endTransmission(true);
         if (error != 0)
         {
+#if DEBUG_I2C_ERRORS
             Serial.print("I2C write error: ");
             Serial.println(error);
+#endif
             return 0xFFFF;
         }
     }
@@ -200,7 +223,9 @@ uint16_t IMU::readRegister16(uint8_t reg, uint8_t addr)
     Wire.requestFrom(addr, (uint8_t)4);
     if (Wire.available() < 4)
     {
+#if DEBUG_I2C_ERRORS
         Serial.println("I2C read error: Not enough bytes");
+#endif
         return 0xFFFF;
     }
 
@@ -233,8 +258,10 @@ void IMU::writeRegister16(uint8_t reg, uint16_t data)
     int error = Wire.endTransmission();
     if (error != 0)
     {
+#if DEBUG_I2C_ERRORS
         Serial.print("I2C write error: ");
         Serial.println(error);
+#endif
     }
 }
 
@@ -347,6 +374,13 @@ void IMU::printData()
         Serial.print(",");
         Serial.print(gz, 2);
         Serial.print(",");
-        Serial.println(isnan(temp) ? "NAN" : String(temp, 1));
+        if (isnan(temp))
+        {
+            Serial.println("NAN");
+        }
+        else
+        {
+            Serial.println(temp, 1);
+        }
     }
 }

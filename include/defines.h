@@ -9,6 +9,20 @@
 #define display_RESET -1
 #define DISPLAY_REFRESH_MS 30 // Display refresh throttle (milliseconds) ~33 FPS
 
+// Multi-rate scheduler intervals.
+#define CONTROL_TASK_INTERVAL_MS 2
+#define UI_TASK_INTERVAL_MS 30
+#define SLOW_TASK_INTERVAL_MS 1000
+
+// Shared ADC cache cadence.
+#define ADC_CACHE_INTERVAL_MS 1000
+
+// Debug logging gates.
+#define DEBUG_ROBOT_BOOT 0
+#define DEBUG_IMU_INIT 0
+#define DEBUG_IMU_RUNTIME 0
+#define DEBUG_I2C_ERRORS 0
+
 // Feature flags
 // Set to 1 when QTR line sensors are physically installed and wired.
 #define ENABLE_QTR_LINE_SENSORS 0

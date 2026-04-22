@@ -1,6 +1,7 @@
 #include "expander.h"
 
 Adafruit_MCP23X17 mcp;
+static bool expanderAvailable = false;
 
 /*
  * Check for interrupts on the IO expander
@@ -9,6 +10,11 @@ Adafruit_MCP23X17 mcp;
  */
 int checkExpanderInterrupt()
 {
+  if (!expanderAvailable)
+  {
+    return -1;
+  }
+
   if (!digitalRead(INT_A))
   {
     int x = mcp.getLastInterruptPin();
@@ -20,18 +26,23 @@ int checkExpanderInterrupt()
 
 bool isExpanderPressed(int pin)
 {
+  if (!expanderAvailable)
+  {
+    return false;
+  }
+
   return mcp.digitalRead(pin) == LOW;
 }
 
 bool setupExpander()
 {
+  expanderAvailable = false;
   if (!mcp.begin_I2C(IO_ADDRESS))
   {
-    Serial.println("Error.");
-    while (1)
-      ;
+    return false;
   }
 
+  expanderAvailable = true;
   Serial.println("IO Expander found!");
 
   pinMode(INT_A, INPUT);

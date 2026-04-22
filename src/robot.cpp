@@ -10,6 +10,8 @@ static const unsigned long IMU_EVASION_BACKUP_MS = 220;
 static const unsigned long IMU_EVASION_TURN_MS = 160;
 static const unsigned long IMU_SEARCH_PHASE_MS = 220;
 static const unsigned long IMU_SEARCH_PULSE_MS = 80;
+static const unsigned long IMU_ATTACK_RECOIL_MS = 40;
+static const unsigned long STING_TURN_COMMIT_MS = 50;
 
 Robot::Robot()
     : currentMode(MODE_MENU),
@@ -28,6 +30,7 @@ Robot::Robot()
       buzzerLastToggleMs(0),
       buzzerTransitionsRemaining(0),
       imuAttackLocked(false),
+      imuAttackRecoilStartMs(0),
       imuAttackHeadingDeg(0.0f),
       imuPhaseStartMs(0),
       imuEvasionStep(0),
@@ -41,11 +44,20 @@ Robot::Robot()
       imuLastPidCorrection(0.0f),
       imuAvailable(false),
       imuLastPrintMs(0),
+      adcCacheValid(false),
+      adcLastSampleMs(0),
+      cachedBatteryRawAdc(0),
+      cachedBatteryAdcVoltage(0.0f),
+      cachedBatteryVoltage(0.0f),
+      cachedTemperatureVoltage(0.0f),
+      cachedTemperatureC(NAN),
       qtrLineSensorsEnabled(ENABLE_QTR_LINE_SENSORS != 0),
       imuLastSeenDirection(1),
       imuSearchDirection(1),
       imuSearchPhaseStartMs(0),
-      imuSearchForwardPulse(false)
+      imuSearchForwardPulse(false),
+      stingRightCommitUntilMs(0),
+      stingCommittedTurnDirection(1)
 {
 }
 
@@ -53,13 +65,17 @@ void Robot::setup()
 {
     Serial.begin(115200);
     unsigned long serialWaitStart = millis();
-    while (!Serial && (millis() - serialWaitStart) < 2500)
+    while (!Serial && (millis() - serialWaitStart) < 300)
     {
-        delay(10);
+        delay(1);
     }
+
+#if DEBUG_ROBOT_BOOT
     Serial.println("[BOOT] Robot setup starting...");
+#endif
 
     Wire.begin();
+    Wire.setClock(400000);
     setupPins();
 
     display.setup();
@@ -77,22 +93,29 @@ void Robot::setup()
     {
         imu.calibrateGyro();
         imu.resetHeading();
+#if DEBUG_ROBOT_BOOT
         Serial.println("IMU initialized successfully.");
+#endif
     }
     else
     {
+#if DEBUG_ROBOT_BOOT
         Serial.println("IMU init failed. Continuing without IMU updates.");
+#endif
     }
     headingController.reset();
     previousStrategy = currentStrategy;
     resetIMUStrategyState();
     applySpeedPreset(currentSpeedLevel);
 
-    playMelody();
+    // playMelody();
 }
 
 void Robot::update()
 {
+    unsigned long nowMs = millis();
+    refreshAdcCache(nowMs);
+
     irSensors.read();
     if (qtrLineSensorsEnabled)
     {
@@ -102,13 +125,14 @@ void Robot::update()
     {
         imu.read();
 
-        unsigned long nowMs = millis();
+#if DEBUG_IMU_RUNTIME
         if ((nowMs - imuLastPrintMs) >= 250)
         {
             Serial.print("[IMU] ");
             imu.printData();
             imuLastPrintMs = nowMs;
         }
+#endif
     }
 
     updateBehavior();
@@ -276,24 +300,46 @@ void Robot::updateBehavior_Sting()
     {
         motor.stop();
         currentMotorDirection = DIRECTION_STOP;
+        stingRightCommitUntilMs = 0;
+        stingCommittedTurnDirection = 1;
         return;
     }
 
+    unsigned long nowMs = millis();
     int *irValues = irSensors.getAllValues();
 
     if (irValues[1] == 1)
     {
+        stingRightCommitUntilMs = 0;
+        stingCommittedTurnDirection = 1;
         motor.forward(speedConfig.attack_speed);
         currentMotorDirection = DIRECTION_FORWARD;
     }
+    else if (nowMs < stingRightCommitUntilMs)
+    {
+        if (stingCommittedTurnDirection < 0)
+        {
+            motor.left(speedConfig.turn_speed_moderate);
+            currentMotorDirection = DIRECTION_LEFT;
+        }
+        else
+        {
+            motor.right(speedConfig.turn_speed_moderate);
+            currentMotorDirection = DIRECTION_RIGHT;
+        }
+    }
     else if (irValues[0] == 1)
     {
-        motor.left(speedConfig.attack_speed);
+        stingCommittedTurnDirection = -1;
+        stingRightCommitUntilMs = nowMs + STING_TURN_COMMIT_MS;
+        motor.left(speedConfig.turn_speed_moderate);
         currentMotorDirection = DIRECTION_LEFT;
     }
     else if (irValues[2] == 1)
     {
-        motor.right(speedConfig.attack_speed);
+        stingCommittedTurnDirection = 1;
+        stingRightCommitUntilMs = nowMs + STING_TURN_COMMIT_MS;
+        motor.right(speedConfig.turn_speed_moderate);
         currentMotorDirection = DIRECTION_RIGHT;
     }
     else
@@ -355,6 +401,7 @@ void Robot::updateBehavior_IMUHold()
 void Robot::resetIMUStrategyState()
 {
     imuAttackLocked = false;
+    imuAttackRecoilStartMs = 0;
     imuAttackHeadingDeg = imu.getHeadingDeg();
     imuPhaseStartMs = 0;
     imuEvasionStep = 0;
@@ -579,6 +626,23 @@ void Robot::runIMUAttack(int *irValues, unsigned long nowMs)
 
         if (!imuAttackLocked)
         {
+            if (imuAttackRecoilStartMs == 0)
+            {
+                imuAttackRecoilStartMs = nowMs;
+            }
+
+            if ((nowMs - imuAttackRecoilStartMs) < IMU_ATTACK_RECOIL_MS)
+            {
+                motor.backward(speedConfig.attack_speed);
+                setMotorPWM(speedConfig.attack_speed, speedConfig.attack_speed);
+                currentMotorDirection = DIRECTION_BACKWARD;
+                return;
+            }
+        }
+
+        imuAttackRecoilStartMs = 0;
+        if (!imuAttackLocked)
+        {
             imuAttackHeadingDeg = imu.getHeadingDeg();
             headingController.reset();
             imuAttackLocked = true;
@@ -597,6 +661,7 @@ void Robot::runIMUAttack(int *irValues, unsigned long nowMs)
     }
 
     imuAttackLocked = false;
+    imuAttackRecoilStartMs = 0;
     imuLastHeadingErrorDeg = 0.0f;
     imuLastPidCorrection = 0.0f;
     if (imuTargetLostMs == 0)
@@ -961,19 +1026,20 @@ int Robot::getCurrentRightMotorPWM() const
 
 float Robot::getBatteryVoltage()
 {
-    return getBatteryVoltageFromRaw(getBatteryRawAdc());
+    if (!adcCacheValid)
+    {
+        refreshAdcCache(millis());
+    }
+    return cachedBatteryVoltage;
 }
 
 int Robot::getBatteryRawAdc()
 {
-    const int sampleCount = 8;
-    int sum = 0;
-    for (int i = 0; i < sampleCount; i++)
+    if (!adcCacheValid)
     {
-        sum += analogRead(BATTERY_LEVEL_PIN);
+        refreshAdcCache(millis());
     }
-
-    return sum / sampleCount;
+    return cachedBatteryRawAdc;
 }
 
 float Robot::getBatteryAdcVoltageFromRaw(int rawAdc)
@@ -998,40 +1064,80 @@ float Robot::getBatteryVoltageFromRaw(int rawAdc)
 
 float Robot::getTemperatureVoltage()
 {
-    const int sampleCount = 8;
-    int sum = 0;
-    for (int i = 0; i < sampleCount; i++)
+    if (!adcCacheValid)
     {
-        sum += analogRead(TEMP_MONITOR_PIN);
+        refreshAdcCache(millis());
     }
-
-    float rawAdc = static_cast<float>(sum) / sampleCount;
-    return (rawAdc / 4095.0f) * 3.3f;
+    return cachedTemperatureVoltage;
 }
 
 float Robot::getTemperatureC()
 {
-    float voltage = getTemperatureVoltage();
+    if (!adcCacheValid)
+    {
+        refreshAdcCache(millis());
+    }
+    return cachedTemperatureC;
+}
+
+int Robot::sampleAveragedAdc(uint8_t pin)
+{
+    const int sampleCount = 8;
+    int sum = 0;
+    for (int i = 0; i < sampleCount; i++)
+    {
+        sum += analogRead(pin);
+    }
+
+    return sum / sampleCount;
+}
+
+void Robot::refreshAdcCache(unsigned long nowMs)
+{
+    if (adcCacheValid && (nowMs - adcLastSampleMs) < ADC_CACHE_INTERVAL_MS)
+    {
+        return;
+    }
+
+    cachedBatteryRawAdc = sampleAveragedAdc(BATTERY_LEVEL_PIN);
+    cachedBatteryAdcVoltage = getBatteryAdcVoltageFromRaw(cachedBatteryRawAdc);
+    cachedBatteryVoltage = getBatteryVoltageFromRaw(cachedBatteryRawAdc);
+
+    int tempRawAdc = sampleAveragedAdc(TEMP_MONITOR_PIN);
+    cachedTemperatureVoltage = (static_cast<float>(tempRawAdc) / 4095.0f) * 3.3f;
+
+    float voltage = cachedTemperatureVoltage;
 
     if (!isfinite(voltage) || voltage <= 0.0f || voltage >= (TEMP_NTC_PULLUP_VOLTAGE - 0.01f))
     {
-        return NAN;
+        cachedTemperatureC = NAN;
+        adcLastSampleMs = nowMs;
+        adcCacheValid = true;
+        return;
     }
 
     float resistance = TEMP_NTC_PULLUP_RESISTANCE * voltage / (TEMP_NTC_PULLUP_VOLTAGE - voltage);
     if (!isfinite(resistance) || resistance <= 0.0f)
     {
-        return NAN;
+        cachedTemperatureC = NAN;
+        adcLastSampleMs = nowMs;
+        adcCacheValid = true;
+        return;
     }
 
     const float referenceKelvin = TEMP_NTC_REFERENCE_TEMP_C + 273.15f;
     float invTemperature = (1.0f / referenceKelvin) + (1.0f / TEMP_NTC_BETA) * logf(resistance / TEMP_NTC_R25);
     if (!isfinite(invTemperature) || invTemperature <= 0.0f)
     {
-        return NAN;
+        cachedTemperatureC = NAN;
+        adcLastSampleMs = nowMs;
+        adcCacheValid = true;
+        return;
     }
 
-    return (1.0f / invTemperature) - 273.15f;
+    cachedTemperatureC = (1.0f / invTemperature) - 273.15f;
+    adcLastSampleMs = nowMs;
+    adcCacheValid = true;
 }
 
 void Robot::cycleMenuScreenBackward()

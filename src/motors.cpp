@@ -14,6 +14,8 @@ void Motor::setup()
     pinMode(DIR2, OUTPUT);
 
     analogReadResolution(12);
+    analogWriteRange(255);
+    analogWriteFreq(5000);
 
     digitalWrite(ENM1, HIGH);
     digitalWrite(ENM2, HIGH);
@@ -29,12 +31,12 @@ void Motor::drive(int pwmLeft, int pwmRight, bool dirLeftForward, bool dirRightF
     analogWrite(PWM2, constrain(pwmRight, 0, 255));
 }
 
-void Motor::forward(int pwm)
+void Motor::backward(int pwm)
 {
     drive(pwm, pwm, true, false);
 }
 
-void Motor::backward(int pwm)
+void Motor::forward(int pwm)
 {
     drive(pwm, pwm, false, true);
 }

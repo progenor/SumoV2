@@ -34,14 +34,36 @@ sequenceDiagram
     R->>R: setupPins + display + motor + IR/QTR + IMU
     A->>B: setup() (expander init)
 
-    loop every ~5 ms
+    loop every scheduler tick
         A->>B: update()
         B-->>A: keypad action (h/j/k/l)
         A->>R: handleKeypadAction(action)
-        A->>R: update()
-        A->>R: render menu/running screen
+        A->>R: update() every 2 ms (control task)
+        A->>R: render menu every 30 ms (UI task)
+        A->>A: updateMelody() non-blocking each loop
     end
 ```
+
+## Runtime Scheduling (Current)
+
+- Control task interval: `2 ms` (`CONTROL_TASK_INTERVAL_MS`).
+- UI/menu redraw interval: `30 ms` (`UI_TASK_INTERVAL_MS`).
+- Slow task interval constant: `1000 ms` (`SLOW_TASK_INTERVAL_MS`, reserved for slow periodic work).
+
+This keeps sensor/behavior response fast while display work is decoupled from control timing.
+
+## Startup and Fault Tolerance
+
+- IO expander init is now fail-safe; if MCP23017 is unavailable at boot, robot setup continues and keypad input is skipped.
+- Melody startup is non-blocking; `playMelody()` starts playback and `updateMelody()` advances notes using `millis()`.
+- IMU initialization delays remain in place (sensor stability requirement).
+
+## Performance-Oriented Runtime Details
+
+- ADC cache cadence: battery and temperature values are sampled every `1000 ms` and reused between samples.
+- I2C bus speed: set to `400 kHz` after `Wire.begin()`.
+- Motor PWM settings for Pololu G2 class drivers use PWM frequency `5 kHz` and range `0..255`.
+- Debug logs are compile-time gated via `DEBUG_ROBOT_BOOT`, `DEBUG_IMU_INIT`, `DEBUG_IMU_RUNTIME`, `DEBUG_I2C_ERRORS`.
 
 ## Strategy Dispatch
 

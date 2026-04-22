@@ -3,74 +3,89 @@
 #include "button.h"
 #include "menu.h"
 #include "ir.h"
+#include "melody.h"
+#include "defines.h"
 
 Robot robot;
 ButtonManager buttonManager;
 
-void setup()
-{
-  delay(2000);
-  robot.setup();
-  buttonManager.setup();
-}
+static unsigned long lastControlTaskMs = 0;
+static unsigned long lastUiTaskMs = 0;
 
-void Screen()
+static void drawMenuScreen()
 {
-  if (robot.getMode() == MODE_MENU)
-  {
+    if (robot.getMode() != MODE_MENU)
+    {
+        return;
+    }
+
     int currentScreen = robot.getCurrentMenuScreen();
     switch (currentScreen)
     {
     case MENU_SCREEN_MAIN:
-      robot.getDisplay().drawMainScreen();
-      break;
+        robot.getDisplay().drawMainScreen();
+        break;
     case MENU_SCREEN_SPEED:
-      robot.getDisplay().drawSpeedSelectorScreen(robot.getCurrentSpeedLevel());
-      break;
+        robot.getDisplay().drawSpeedSelectorScreen(robot.getCurrentSpeedLevel());
+        break;
     case MENU_SCREEN_IR:
-      robot.getDisplay().displayIR(robot.getIRValues(), IRCount);
-      break;
+        robot.getDisplay().displayIR(robot.getIRValues(), IRCount);
+        break;
     case MENU_SCREEN_STRATEGY:
-      robot.getDisplay().drawStrategySelectorScreen(robot.getCurrentStrategy());
-      break;
+        robot.getDisplay().drawStrategySelectorScreen(robot.getCurrentStrategy());
+        break;
     case MENU_SCREEN_START_ROUTINE:
-      robot.getDisplay().drawStartRoutineSelectorScreen(robot.getCurrentStartRoutine());
-      break;
+        robot.getDisplay().drawStartRoutineSelectorScreen(robot.getCurrentStartRoutine());
+        break;
     case MENU_SCREEN_DIRECTION:
-      robot.getDisplay().drawDirectionIndicatorScreen(robot.getCurrentDirection(), robot.getCurrentLeftMotorPWM(), robot.getCurrentRightMotorPWM());
-      break;
+        robot.getDisplay().drawDirectionIndicatorScreen(robot.getCurrentDirection(), robot.getCurrentLeftMotorPWM(), robot.getCurrentRightMotorPWM());
+        break;
     case MENU_SCREEN_BATTERY:
     {
-      int rawBatteryAdc = robot.getBatteryRawAdc();
-      float batteryAdcVoltage = robot.getBatteryAdcVoltageFromRaw(rawBatteryAdc);
-      float batteryVoltage = robot.getBatteryVoltageFromRaw(rawBatteryAdc);
-      robot.getDisplay().drawBatteryVoltageScreen(batteryVoltage, batteryAdcVoltage, rawBatteryAdc);
-      break;
+        int rawBatteryAdc = robot.getBatteryRawAdc();
+        float batteryAdcVoltage = robot.getBatteryAdcVoltageFromRaw(rawBatteryAdc);
+        float batteryVoltage = robot.getBatteryVoltageFromRaw(rawBatteryAdc);
+        robot.getDisplay().drawBatteryVoltageScreen(batteryVoltage, batteryAdcVoltage, rawBatteryAdc);
+        break;
     }
     case MENU_SCREEN_TEMP:
-      robot.getDisplay().drawTemperatureScreen(robot.getTemperatureC(), robot.getTemperatureVoltage());
-      break;
+        robot.getDisplay().drawTemperatureScreen(robot.getTemperatureC(), robot.getTemperatureVoltage());
+        break;
     default:
-      robot.getDisplay().drawMainScreen();
-      break;
+        robot.getDisplay().drawMainScreen();
+        break;
     }
-  }
+}
+
+void setup()
+{
+    robot.setup();
+    buttonManager.setup();
 }
 
 void loop()
 {
-  buttonManager.update();
-  KeypadAction action = buttonManager.getAction();
-  if (action != KEYPAD_ACTION_NONE)
-  {
-    robot.handleKeypadAction(action);
-  }
+    unsigned long nowMs = millis();
 
-  // robot.testDirections();
+    // Keep melody playback decoupled from control flow and delays.
+    updateMelody();
 
-  robot.update();
+    if ((nowMs - lastControlTaskMs) >= CONTROL_TASK_INTERVAL_MS)
+    {
+        buttonManager.update();
+        KeypadAction action = buttonManager.getAction();
+        if (action != KEYPAD_ACTION_NONE)
+        {
+            robot.handleKeypadAction(action);
+        }
 
-  Screen();
+        robot.update();
+        lastControlTaskMs = nowMs;
+    }
 
-  delay(5);
+    if ((nowMs - lastUiTaskMs) >= UI_TASK_INTERVAL_MS)
+    {
+        drawMenuScreen();
+        lastUiTaskMs = nowMs;
+    }
 }
