@@ -36,6 +36,13 @@ This document captures the current whole-PCB wiring map reflected in firmware.
 - GPA7 (pin index 7): CS_2 (reserved / unused by firmware)
 - INTA: connected to Pico GP27
 
+Firmware keypad bindings on MCP pins:
+
+- pin 4: `h`
+- pin 5: `j`
+- pin 2: `k`
+- pin 3: `l`
+
 ## Battery Monitor Network
 
 - Divider: R25 = 56k, R26 = 10k
@@ -43,7 +50,9 @@ This document captures the current whole-PCB wiring map reflected in firmware.
 - Equation:
   - Vadc = Vbat \* (10 / 66)
   - Nominal: Vbat = Vadc \* 6.6
-  - Firmware calibrated: Vbat = max(0, (Vadc - BATTERY_ADC_OFFSET_V)) \* 6.6
+  - Firmware calibrated (current code): Vbat = max(0, (Vadc + 0.12)) \* 6.6
+
+Note: `BATTERY_ADC_OFFSET_V` remains defined in `include/defines.h`, but the active conversion path in `Robot::getBatteryVoltageFromRaw()` currently applies `+0.12V` directly.
 
 ## Temperature Monitor Network
 
@@ -53,3 +62,8 @@ This document captures the current whole-PCB wiring map reflected in firmware.
   - Rntc = Rpullup \* Vadc / (Vpullup - Vadc)
   - 1/T = 1/T0 + (1/B) \* ln(Rntc/R0)
   - Where Rpullup = 10k, Vpullup = 5V, R0 = 10k, T0 = 25C + 273.15K
+
+Current display behavior:
+
+- temperature and battery are shown together on diagnostics screen (`MENU_SCREEN_BATTERY`)
+- diagnostics page also hosts motor test submenu (`forward/backward/right/left`)
