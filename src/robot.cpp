@@ -15,7 +15,7 @@ static const unsigned long STING_TURN_COMMIT_MS = 50;
 
 Robot::Robot()
     : currentMode(MODE_MENU),
-      currentMenuScreen(MENU_SCREEN_MAIN),
+      currentMenuScreen(MENU_SCREEN_IR),
       paused(false),
       currentSpeedLevel(SPEED_LEVEL_LOW),
       currentStrategy(STRATEGY_STING),

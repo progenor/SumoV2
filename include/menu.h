@@ -2,12 +2,12 @@
 #define MENU_H
 
 // Menu screen indices
-#define MENU_SCREEN_MAIN 0
+#define MENU_SCREEN_MAIN 5
 #define MENU_SCREEN_SPEED 1
-#define MENU_SCREEN_IR 2
-#define MENU_SCREEN_STRATEGY 3
+#define MENU_SCREEN_IR 0
+#define MENU_SCREEN_STRATEGY 2
 #define MENU_SCREEN_DIRECTION 4
-#define MENU_SCREEN_BATTERY 5
+#define MENU_SCREEN_BATTERY 3
 #define MENU_SCREEN_COUNT 6
 
 // Robot mode enumeration
