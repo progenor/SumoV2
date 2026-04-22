@@ -45,10 +45,6 @@ public:
     void setStrategy(int strategy);
     void cycleStrategy();
 
-    int getCurrentStartRoutine() const;
-    void setStartRoutine(int startRoutine);
-    void cycleStartRoutine();
-
     int getCurrentDirection() const;
     int getCurrentLeftMotorPWM() const;
     int getCurrentRightMotorPWM() const;
@@ -93,7 +89,6 @@ private:
     bool paused;
     int currentSpeedLevel;
     int currentStrategy;
-    int currentStartRoutine;
     int currentMotorDirection;
     int lastLeftMotorPWM;
     int lastRightMotorPWM;
@@ -157,7 +152,6 @@ private:
     void cycleMenuScreenBackward();
     void cycleSpeedLevelBackward();
     void cycleStrategyBackward();
-    void cycleStartRoutineBackward();
     void cycleStartDelayBackward();
 
     void updateBatteryBuzzer();

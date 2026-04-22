@@ -34,9 +34,6 @@ static void drawMenuScreen()
     case MENU_SCREEN_STRATEGY:
         robot.getDisplay().drawStrategySelectorScreen(robot.getCurrentStrategy());
         break;
-    case MENU_SCREEN_START_ROUTINE:
-        robot.getDisplay().drawStartRoutineSelectorScreen(robot.getCurrentStartRoutine());
-        break;
     case MENU_SCREEN_DIRECTION:
         robot.getDisplay().drawDirectionIndicatorScreen(robot.getCurrentDirection(), robot.getCurrentLeftMotorPWM(), robot.getCurrentRightMotorPWM());
         break;

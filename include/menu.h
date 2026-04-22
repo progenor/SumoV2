@@ -6,11 +6,10 @@
 #define MENU_SCREEN_SPEED 1
 #define MENU_SCREEN_IR 2
 #define MENU_SCREEN_STRATEGY 3
-#define MENU_SCREEN_START_ROUTINE 4
-#define MENU_SCREEN_DIRECTION 5
-#define MENU_SCREEN_BATTERY 6
-#define MENU_SCREEN_TEMP 7
-#define MENU_SCREEN_COUNT 8
+#define MENU_SCREEN_DIRECTION 4
+#define MENU_SCREEN_BATTERY 5
+#define MENU_SCREEN_TEMP 6
+#define MENU_SCREEN_COUNT 7
 
 // Robot mode enumeration
 enum RobotMode
@@ -60,10 +59,7 @@ enum Strategy
 enum StartRoutine
 {
     START_ROUTINE_STRAIGHT = 0,
-    START_ROUTINE_LEFT_ARC = 1,
-    START_ROUTINE_RIGHT_ARC = 2,
-    START_ROUTINE_SPIN_WAIT = 3,
-    START_ROUTINE_COUNT = 4
+    START_ROUTINE_COUNT = 1
 };
 
 // Motor direction enumeration

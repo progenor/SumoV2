@@ -19,7 +19,6 @@ Robot::Robot()
       paused(false),
       currentSpeedLevel(SPEED_LEVEL_LOW),
       currentStrategy(STRATEGY_STING),
-      currentStartRoutine(START_ROUTINE_STRAIGHT),
       currentMotorDirection(DIRECTION_STOP),
       lastLeftMotorPWM(0),
       lastRightMotorPWM(0),
@@ -527,30 +526,9 @@ void Robot::runIMUStartRoutine(unsigned long nowMs)
         return;
     }
 
-    switch (currentStartRoutine)
-    {
-    case START_ROUTINE_LEFT_ARC:
-        motor.drive(speedConfig.search_speed - 20, speedConfig.search_speed + 10, true, false);
-        setMotorPWM(speedConfig.search_speed - 20, speedConfig.search_speed + 10);
-        currentMotorDirection = DIRECTION_FORWARD;
-        break;
-    case START_ROUTINE_RIGHT_ARC:
-        motor.drive(speedConfig.search_speed + 10, speedConfig.search_speed - 20, true, false);
-        setMotorPWM(speedConfig.search_speed + 10, speedConfig.search_speed - 20);
-        currentMotorDirection = DIRECTION_FORWARD;
-        break;
-    case START_ROUTINE_SPIN_WAIT:
-        motor.drive(speedConfig.turn_speed_moderate, speedConfig.turn_speed_moderate, true, true);
-        setMotorPWM(speedConfig.turn_speed_moderate, speedConfig.turn_speed_moderate);
-        currentMotorDirection = DIRECTION_RIGHT;
-        break;
-    case START_ROUTINE_STRAIGHT:
-    default:
-        motor.drive(speedConfig.search_speed, speedConfig.search_speed, true, false);
-        setMotorPWM(speedConfig.search_speed, speedConfig.search_speed);
-        currentMotorDirection = DIRECTION_FORWARD;
-        break;
-    }
+    motor.drive(speedConfig.search_speed, speedConfig.search_speed, true, false);
+    setMotorPWM(speedConfig.search_speed, speedConfig.search_speed);
+    currentMotorDirection = DIRECTION_FORWARD;
 }
 
 void Robot::runIMUSearch(int *irValues)
@@ -881,10 +859,6 @@ void Robot::handleKeypadAction(KeypadAction action)
         {
             cycleStrategyBackward();
         }
-        else if (currentMenuScreen == MENU_SCREEN_START_ROUTINE)
-        {
-            cycleStartRoutineBackward();
-        }
         break;
 
     case KEYPAD_ACTION_K:
@@ -895,10 +869,6 @@ void Robot::handleKeypadAction(KeypadAction action)
         else if (currentMenuScreen == MENU_SCREEN_STRATEGY)
         {
             cycleStrategy();
-        }
-        else if (currentMenuScreen == MENU_SCREEN_START_ROUTINE)
-        {
-            cycleStartRoutine();
         }
         break;
 
@@ -1002,11 +972,6 @@ void Robot::cycleSpeedLevel()
 int Robot::getCurrentStrategy() const
 {
     return currentStrategy;
-}
-
-int Robot::getCurrentStartRoutine() const
-{
-    return currentStartRoutine;
 }
 
 int Robot::getCurrentDirection() const
@@ -1166,22 +1131,4 @@ void Robot::setStrategy(int strategy)
 void Robot::cycleStrategy()
 {
     setStrategy((currentStrategy + 1) % STRATEGY_COUNT);
-}
-
-void Robot::setStartRoutine(int startRoutine)
-{
-    if (startRoutine >= 0 && startRoutine < START_ROUTINE_COUNT)
-    {
-        currentStartRoutine = startRoutine;
-    }
-}
-
-void Robot::cycleStartRoutine()
-{
-    setStartRoutine((currentStartRoutine + 1) % START_ROUTINE_COUNT);
-}
-
-void Robot::cycleStartRoutineBackward()
-{
-    setStartRoutine((currentStartRoutine + START_ROUTINE_COUNT - 1) % START_ROUTINE_COUNT);
 }
