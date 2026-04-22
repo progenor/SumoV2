@@ -252,7 +252,7 @@ void Display::drawSpeedSelectorScreen(int currentSpeedLevel)
     display.display();
 }
 
-void Display::drawBatteryVoltageScreen(float batteryVoltage, float adcVoltage, int rawAdc)
+void Display::drawBatteryTemperatureScreen(float batteryVoltage, float temperatureC)
 {
     if (!shouldUpdate())
         return;
@@ -261,66 +261,39 @@ void Display::drawBatteryVoltageScreen(float batteryVoltage, float adcVoltage, i
     display.setTextColor(SSD1306_WHITE);
     display.setTextWrap(false);
 
-    display.setTextSize(1);
-    display.setCursor(0, 0);
-    display.print("BATTERY");
+    char voltageText[16];
+    snprintf(voltageText, sizeof(voltageText), "%.2f V", batteryVoltage);
 
-    display.setTextSize(2);
-    display.setCursor(0, 22);
-    display.print(batteryVoltage, 2);
-    display.print(" V");
-
-    float percent = ((batteryVoltage - 10.0f) / (12.6f - 10.0f)) * 100.0f;
-    if (percent < 0.0f)
-        percent = 0.0f;
-    if (percent > 100.0f)
-        percent = 100.0f;
-
-    display.setTextSize(1);
-    display.setCursor(0, 44);
-    display.print("~");
-    display.print(percent, 0);
-    display.print("% (3S)");
-
-    display.setCursor(0, 54);
-    display.print("ADC:");
-    display.print(adcVoltage, 3);
-    display.print("V ");
-    display.print(rawAdc);
-
-    display.display();
-}
-
-void Display::drawTemperatureScreen(float temperatureC, float sensorVoltage)
-{
-    if (!shouldUpdate())
-        return;
-
-    display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
-    display.setTextWrap(false);
-
-    display.setTextSize(1);
-    display.setCursor(0, 0);
-    display.print("TEMP (TM1)");
-
-    display.setTextSize(2);
-    display.setCursor(0, 18);
+    char tempText[16];
     if (isnan(temperatureC))
     {
-        display.print("N/A");
+        snprintf(tempText, sizeof(tempText), "N/A C");
     }
     else
     {
-        display.print(temperatureC, 1);
-        display.print(" C");
+        snprintf(tempText, sizeof(tempText), "%.1f C", temperatureC);
     }
 
-    display.setTextSize(1);
-    display.setCursor(0, 50);
-    display.print("ADC: ");
-    display.print(sensorVoltage, 3);
-    display.print(" V");
+    auto drawCenteredLine = [this](const char *text, int16_t y, uint8_t size)
+    {
+        int16_t x1 = 0;
+        int16_t y1 = 0;
+        uint16_t w = 0;
+        uint16_t h = 0;
+        display.setTextSize(size);
+        display.getTextBounds(text, 0, y, &x1, &y1, &w, &h);
+        int16_t x = (SCREEN_WIDTH - static_cast<int16_t>(w)) / 2;
+        if (x < 0)
+        {
+            x = 0;
+        }
+        display.setCursor(x, y);
+        display.print(text);
+    };
+
+    drawCenteredLine("Diagnostics", 2, 1);
+    drawCenteredLine(voltageText, 18, 2);
+    drawCenteredLine(tempText, 40, 2);
 
     display.display();
 }

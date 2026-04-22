@@ -8,8 +8,7 @@
 #define MENU_SCREEN_STRATEGY 3
 #define MENU_SCREEN_DIRECTION 4
 #define MENU_SCREEN_BATTERY 5
-#define MENU_SCREEN_TEMP 6
-#define MENU_SCREEN_COUNT 7
+#define MENU_SCREEN_COUNT 6
 
 // Robot mode enumeration
 enum RobotMode
