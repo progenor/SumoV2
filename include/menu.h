@@ -61,6 +61,15 @@ enum StartRoutine
     START_ROUTINE_COUNT = 1
 };
 
+enum MotorDiagnosticsSelection
+{
+    MOTOR_DIAG_FORWARD = 0,
+    MOTOR_DIAG_BACKWARD = 1,
+    MOTOR_DIAG_RIGHT = 2,
+    MOTOR_DIAG_LEFT = 3,
+    MOTOR_DIAG_COUNT = 4
+};
+
 // Motor direction enumeration
 enum MotorDirection
 {

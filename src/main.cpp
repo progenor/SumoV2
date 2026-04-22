@@ -38,7 +38,11 @@ static void drawMenuScreen()
         robot.getDisplay().drawDirectionIndicatorScreen(robot.getCurrentDirection(), robot.getCurrentLeftMotorPWM(), robot.getCurrentRightMotorPWM());
         break;
     case MENU_SCREEN_BATTERY:
-        robot.getDisplay().drawBatteryTemperatureScreen(robot.getBatteryVoltage(), robot.getTemperatureC());
+        robot.getDisplay().drawBatteryTemperatureScreen(
+            robot.getBatteryVoltage(),
+            robot.getTemperatureC(),
+            robot.isDiagnosticsMotorTestActive(),
+            robot.getDiagnosticsMotorTestSelection());
         break;
     default:
         robot.getDisplay().drawMainScreen();

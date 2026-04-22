@@ -48,6 +48,8 @@ public:
     int getCurrentDirection() const;
     int getCurrentLeftMotorPWM() const;
     int getCurrentRightMotorPWM() const;
+    bool isDiagnosticsMotorTestActive() const;
+    int getDiagnosticsMotorTestSelection() const;
 
     void handleKeypadAction(KeypadAction action);
 
@@ -132,11 +134,15 @@ private:
     unsigned long stingRightCommitUntilMs;
     int stingCommittedTurnDirection;
 
+    bool diagnosticsMotorTestActive;
+    int diagnosticsMotorTestSelection;
+
     void updateBehavior();
     void updateBehavior_Speed();
     void updateBehavior_Sting();
     void updateBehavior_Run();
     void updateBehavior_IMUHold();
+    void updateBehavior_DiagnosticsMotorTest();
     void resetIMUStrategyState();
     void updateIMUStateMachine(int *irValues, int *qtrValues, unsigned long nowMs);
     void runIMUStartDelay(unsigned long nowMs);
@@ -153,6 +159,11 @@ private:
     void cycleSpeedLevelBackward();
     void cycleStrategyBackward();
     void cycleStartDelayBackward();
+
+    void enterDiagnosticsMotorTest();
+    void exitDiagnosticsMotorTest();
+    void cycleDiagnosticsMotorTest();
+    void cycleDiagnosticsMotorTestBackward();
 
     void updateBatteryBuzzer();
     void setBuzzerOutput(bool on);

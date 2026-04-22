@@ -252,7 +252,7 @@ void Display::drawSpeedSelectorScreen(int currentSpeedLevel)
     display.display();
 }
 
-void Display::drawBatteryTemperatureScreen(float batteryVoltage, float temperatureC)
+void Display::drawBatteryTemperatureScreen(float batteryVoltage, float temperatureC, bool motorTestActive, int motorTestSelection)
 {
     if (!shouldUpdate())
         return;
@@ -260,6 +260,34 @@ void Display::drawBatteryTemperatureScreen(float batteryVoltage, float temperatu
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
     display.setTextWrap(false);
+
+    if (motorTestActive)
+    {
+        const char *motorTestNames[] = {"forward", "backward", "right", "left"};
+        uint8_t y_positions[] = {14, 26, 38, 50};
+
+        display.setTextSize(1);
+        display.setCursor(0, 0);
+        display.print("motor test");
+
+        for (int i = 0; i < MOTOR_DIAG_COUNT; i++)
+        {
+            if (i == motorTestSelection)
+            {
+                display.drawBitmap(15, y_positions[i] + 3, image_Pin_arrow_right_bits, 9, 7, 1);
+                display.setCursor(30, y_positions[i]);
+                display.print(motorTestNames[i]);
+            }
+            else
+            {
+                display.setCursor(30, y_positions[i]);
+                display.print(motorTestNames[i]);
+            }
+        }
+
+        display.display();
+        return;
+    }
 
     char voltageText[16];
     snprintf(voltageText, sizeof(voltageText), "%.2f V", batteryVoltage);
@@ -291,7 +319,7 @@ void Display::drawBatteryTemperatureScreen(float batteryVoltage, float temperatu
         display.print(text);
     };
 
-    drawCenteredLine("Diagnostics", 2, 1);
+    drawCenteredLine("diagnostics", 2, 1);
     drawCenteredLine(voltageText, 18, 2);
     drawCenteredLine(tempText, 40, 2);
 

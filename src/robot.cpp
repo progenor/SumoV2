@@ -56,7 +56,9 @@ Robot::Robot()
       imuSearchPhaseStartMs(0),
       imuSearchForwardPulse(false),
       stingRightCommitUntilMs(0),
-      stingCommittedTurnDirection(1)
+      stingCommittedTurnDirection(1),
+      diagnosticsMotorTestActive(false),
+      diagnosticsMotorTestSelection(MOTOR_DIAG_FORWARD)
 {
 }
 
@@ -812,6 +814,12 @@ void Robot::updateBehavior()
         previousStrategy = currentStrategy;
     }
 
+    if (diagnosticsMotorTestActive)
+    {
+        updateBehavior_DiagnosticsMotorTest();
+        return;
+    }
+
     switch (currentStrategy)
     {
     case STRATEGY_STING:
@@ -837,6 +845,11 @@ void Robot::handleKeypadAction(KeypadAction action)
     switch (action)
     {
     case KEYPAD_ACTION_H:
+        if (diagnosticsMotorTestActive)
+        {
+            exitDiagnosticsMotorTest();
+            break;
+        }
         if (currentMode == MODE_MENU)
         {
             cycleMenuScreenBackward();
@@ -844,6 +857,11 @@ void Robot::handleKeypadAction(KeypadAction action)
         break;
 
     case KEYPAD_ACTION_L:
+        if (diagnosticsMotorTestActive)
+        {
+            exitDiagnosticsMotorTest();
+            break;
+        }
         if (currentMode == MODE_MENU)
         {
             cycleMenuScreen();
@@ -859,6 +877,10 @@ void Robot::handleKeypadAction(KeypadAction action)
         {
             cycleStrategyBackward();
         }
+        else if (diagnosticsMotorTestActive)
+        {
+            cycleDiagnosticsMotorTestBackward();
+        }
         break;
 
     case KEYPAD_ACTION_K:
@@ -869,6 +891,21 @@ void Robot::handleKeypadAction(KeypadAction action)
         else if (currentMenuScreen == MENU_SCREEN_STRATEGY)
         {
             cycleStrategy();
+        }
+        else if (currentMenuScreen == MENU_SCREEN_BATTERY)
+        {
+            if (!diagnosticsMotorTestActive)
+            {
+                enterDiagnosticsMotorTest();
+            }
+            else
+            {
+                cycleDiagnosticsMotorTest();
+            }
+        }
+        else if (diagnosticsMotorTestActive)
+        {
+            cycleDiagnosticsMotorTest();
         }
         break;
 
@@ -987,6 +1024,16 @@ int Robot::getCurrentLeftMotorPWM() const
 int Robot::getCurrentRightMotorPWM() const
 {
     return lastRightMotorPWM;
+}
+
+bool Robot::isDiagnosticsMotorTestActive() const
+{
+    return diagnosticsMotorTestActive;
+}
+
+int Robot::getDiagnosticsMotorTestSelection() const
+{
+    return diagnosticsMotorTestSelection;
 }
 
 float Robot::getBatteryVoltage()
@@ -1118,6 +1165,63 @@ void Robot::cycleSpeedLevelBackward()
 void Robot::cycleStrategyBackward()
 {
     setStrategy((currentStrategy + STRATEGY_COUNT - 1) % STRATEGY_COUNT);
+}
+
+void Robot::enterDiagnosticsMotorTest()
+{
+    diagnosticsMotorTestActive = true;
+    diagnosticsMotorTestSelection = MOTOR_DIAG_FORWARD;
+}
+
+void Robot::exitDiagnosticsMotorTest()
+{
+    diagnosticsMotorTestActive = false;
+}
+
+void Robot::cycleDiagnosticsMotorTest()
+{
+    diagnosticsMotorTestSelection = (diagnosticsMotorTestSelection + 1) % MOTOR_DIAG_COUNT;
+}
+
+void Robot::cycleDiagnosticsMotorTestBackward()
+{
+    diagnosticsMotorTestSelection = (diagnosticsMotorTestSelection + MOTOR_DIAG_COUNT - 1) % MOTOR_DIAG_COUNT;
+}
+
+void Robot::updateBehavior_DiagnosticsMotorTest()
+{
+    if (paused)
+    {
+        motor.stop();
+        setMotorPWM(0, 0);
+        currentMotorDirection = DIRECTION_STOP;
+        return;
+    }
+    int testSpeed = 90;
+    switch (diagnosticsMotorTestSelection)
+    {
+    case MOTOR_DIAG_FORWARD:
+        motor.forward(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_FORWARD;
+        break;
+    case MOTOR_DIAG_BACKWARD:
+        motor.backward(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_BACKWARD;
+        break;
+    case MOTOR_DIAG_RIGHT:
+        motor.right(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_RIGHT;
+        break;
+    case MOTOR_DIAG_LEFT:
+    default:
+        motor.left(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_LEFT;
+        break;
+    }
 }
 
 void Robot::setStrategy(int strategy)
