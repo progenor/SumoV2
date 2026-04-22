@@ -108,7 +108,7 @@ void Robot::setup()
     resetIMUStrategyState();
     applySpeedPreset(currentSpeedLevel);
 
-    playMelody();
+    // playMelody();
 }
 
 void Robot::update()
