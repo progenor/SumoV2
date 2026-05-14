@@ -134,6 +134,10 @@ private:
     unsigned long stingRightCommitUntilMs;
     int stingCommittedTurnDirection;
 
+    // Line sensor backup tracking (works across all strategies)
+    bool isBackingOffFromLine;
+    unsigned long lineBackoffStartMs;
+
     bool diagnosticsMotorTestActive;
     int diagnosticsMotorTestSelection;
 
@@ -143,6 +147,7 @@ private:
     void updateBehavior_Run();
     void updateBehavior_IMUHold();
     void updateBehavior_DiagnosticsMotorTest();
+    void checkLineSensorsAndBackoff(int backoffDurationMs = 200);
     void resetIMUStrategyState();
     void updateIMUStateMachine(int *irValues, int *qtrValues, unsigned long nowMs);
     void runIMUStartDelay(unsigned long nowMs);

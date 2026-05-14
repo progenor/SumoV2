@@ -57,6 +57,8 @@ Robot::Robot()
       imuSearchForwardPulse(false),
       stingRightCommitUntilMs(0),
       stingCommittedTurnDirection(1),
+      isBackingOffFromLine(false),
+      lineBackoffStartMs(0),
       diagnosticsMotorTestActive(false),
       diagnosticsMotorTestSelection(MOTOR_DIAG_FORWARD)
 {
@@ -134,6 +136,12 @@ void Robot::update()
             imuLastPrintMs = nowMs;
         }
 #endif
+    }
+
+    // Check line sensors and back off if detected (works for all strategies)
+    if (qtrLineSensorsEnabled)
+    {
+        checkLineSensorsAndBackoff(200); // 200ms backoff duration
     }
 
     updateBehavior();
@@ -801,6 +809,38 @@ void Robot::runIMUEdgeRecovery(int *qtrValues, unsigned long nowMs)
     imuState = IMU_STATE_SEARCH;
     imuEvasionStep = 0;
     beginIMUSearchPhase(nowMs);
+}
+
+void Robot::checkLineSensorsAndBackoff(int backoffDurationMs)
+{
+#if ENABLE_QTR_LINE_SENSORS
+    int *qtrValues = qtrSensors.getAllValues();
+    bool lineDetected = (qtrValues[0] == 1) || (qtrValues[1] == 1);
+    unsigned long nowMs = millis();
+
+    // If a line is detected and we're not already backing off, start the backup
+    if (lineDetected && !isBackingOffFromLine)
+    {
+        isBackingOffFromLine = true;
+        lineBackoffStartMs = nowMs;
+    }
+
+    // If we're in backup mode, continue backing off and check if time has elapsed
+    if (isBackingOffFromLine)
+    {
+        motor.backward(speedConfig.attack_speed);
+        currentMotorDirection = DIRECTION_BACKWARD;
+
+        unsigned long elapsedMs = nowMs - lineBackoffStartMs;
+        if (elapsedMs >= (unsigned long)backoffDurationMs)
+        {
+            // Backup duration complete, stop and clear the backup flag
+            motor.stop();
+            currentMotorDirection = DIRECTION_STOP;
+            isBackingOffFromLine = false;
+        }
+    }
+#endif
 }
 
 void Robot::updateBehavior()
