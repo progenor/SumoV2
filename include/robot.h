@@ -45,13 +45,11 @@ public:
     void setStrategy(int strategy);
     void cycleStrategy();
 
-    int getCurrentStartRoutine() const;
-    void setStartRoutine(int startRoutine);
-    void cycleStartRoutine();
-
     int getCurrentDirection() const;
     int getCurrentLeftMotorPWM() const;
     int getCurrentRightMotorPWM() const;
+    bool isDiagnosticsMotorTestActive() const;
+    int getDiagnosticsMotorTestSelection() const;
 
     void handleKeypadAction(KeypadAction action);
 
@@ -93,7 +91,6 @@ private:
     bool paused;
     int currentSpeedLevel;
     int currentStrategy;
-    int currentStartRoutine;
     int currentMotorDirection;
     int lastLeftMotorPWM;
     int lastRightMotorPWM;
@@ -137,11 +134,15 @@ private:
     unsigned long stingRightCommitUntilMs;
     int stingCommittedTurnDirection;
 
+    bool diagnosticsMotorTestActive;
+    int diagnosticsMotorTestSelection;
+
     void updateBehavior();
     void updateBehavior_Speed();
     void updateBehavior_Sting();
     void updateBehavior_Run();
     void updateBehavior_IMUHold();
+    void updateBehavior_DiagnosticsMotorTest();
     void resetIMUStrategyState();
     void updateIMUStateMachine(int *irValues, int *qtrValues, unsigned long nowMs);
     void runIMUStartDelay(unsigned long nowMs);
@@ -157,8 +158,12 @@ private:
     void cycleMenuScreenBackward();
     void cycleSpeedLevelBackward();
     void cycleStrategyBackward();
-    void cycleStartRoutineBackward();
     void cycleStartDelayBackward();
+
+    void enterDiagnosticsMotorTest();
+    void exitDiagnosticsMotorTest();
+    void cycleDiagnosticsMotorTest();
+    void cycleDiagnosticsMotorTestBackward();
 
     void updateBatteryBuzzer();
     void setBuzzerOutput(bool on);

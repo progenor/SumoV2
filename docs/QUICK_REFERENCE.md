@@ -1,129 +1,106 @@
 # SumoV2 Quick Reference
 
-## Control Mapping (Current)
+## Keypad Controls
 
-- Vim-style keypad mode (`h j k l`):
-- `h` (MCP pin 4): previous menu screen
-- `l` (MCP pin 3): next menu screen
-- `j` (MCP pin 5): decrease selected value (speed/strategy)
-- `k` (MCP pin 2): increase selected value (speed/strategy)
+Vim-style on MCP23X17:
 
-Other MCP23X17 channels are treated as expander inputs, not keypad keys:
+- `h` (MCP pin 4): previous menu screen, or exit diagnostics motor test
+- `l` (MCP pin 3): next menu screen, or exit diagnostics motor test
+- `j` (MCP pin 5): decrease/cycle backward
+- `k` (MCP pin 2): increase/cycle forward
 
-- MCP pin 1: `INPUT_IR6_PIN`
-- MCP pin 6: `INPUT_CS_1_PIN`
-- MCP pin 7: `INPUT_CS_2_PIN`
+Adjustment contexts:
 
-## Current Sense Formula (Pololu 2995)
+- Speed screen: `j/k` changes speed preset
+- Strategy screen: `j/k` changes strategy
+- Diagnostics screen (`MENU_SCREEN_BATTERY`): press `k` to enter motor test
+  submenu, `j/k` cycles test action, and `h/l` exits submenu.
 
-For this PCB revision, current sense is routed through the MCP23017 (`INPUT_CS_1_PIN`, `INPUT_CS_2_PIN`) and is only requested when the current or peak-current menu screens are opened.
+## Menu Order (Current)
 
-- This keeps the fast control loop from paying the current-sense cost every cycle.
-- Current values remain cached until the next request.
+The firmware uses these indices:
 
-This avoids extra loop overhead when current information is not on screen.
+- `0`: IR bars
+- `1`: speed selector
+- `2`: strategy selector
+- `3`: diagnostics (battery + temperature + motor test submenu)
+- `4`: direction + PWM
+- `5`: main/logo
 
-## Battery Voltage Formula
+`MENU_SCREEN_COUNT = 6`
 
-Battery monitor divider from schematic:
+## Strategy Summary
 
-- top resistor `R25 = 56k`
-- bottom resistor `R26 = 10k`
-- `Vadc = Vbat * (10 / 66)`
-- calibrated firmware model currently used in code: `Vbat = max(0, (Vadc + 0.12)) * 6.6`
+- `STING`
+  center attack priority; left/right turn commits for `50 ms`.
+- `SPEED`
+  aggressive IR attack/search.
+- `RUN`
+  retreat-style behavior.
+- `IMU_HOLD`
+  straight start phase (`550 ms`), center lock with heading PID correction,
+  short recoil (`40 ms`) before full forward lock, and search/evasion/edge
+  recovery state machine.
 
-The battery menu screen displays live voltage and an approximate 3S percentage at `MENU_SCREEN_BATTERY`.
+## Diagnostics Motor Test
 
-Battery and temperature ADC values are cached and refreshed every `1000 ms` (`ADC_CACHE_INTERVAL_MS`).
+Submenu options:
 
-## Battery Buzzer Alerts
+- forward
+- backward
+- right
+- left
 
-- Below `6.0V`: buzzer alerts are disabled and reset, so USB power does not trigger warnings.
-- Crossing below `12.2V`: warning pattern of `3` beeps, each `500ms`.
-- Below `11.3V`: continuous buzzer alarm.
+Execution model:
 
-## Temperature Screen
+- selected action runs continuously each control cycle
+- fixed test speed currently `90`
+- leaving submenu restores normal strategy-driven behavior
 
-- Temperature monitor net `TM1` is sampled on Pico `GP26` (`TEMP_MONITOR_PIN`).
-- Menu screen: `MENU_SCREEN_TEMP`.
-- Display shows estimated `C` and raw TM1 voltage.
+## Battery and Temperature
 
-## Full PCB Mapping
+Sampling:
 
-See `docs/PCB_SCHEMATIC_MAP.md` for the consolidated whole-board net map.
+- battery and temperature are cached and refreshed every `1000 ms`
 
-## Strategy List
+Battery conversion used in firmware:
 
-- `STING`: center sensor has priority for direct attack.
-- `SPEED`: aggressive search and attack.
-- `RUN`: reverse/retreat behavior when target is detected.
-- `IMU_HOLD`: adds gyro-z based heading correction when target is not centered.
+- `Vadc = raw / 4095 * 3.3`
+- `Vbat = max(0, (Vadc + 0.12)) * 6.6`
 
-## Speed Tuning
+Temperature conversion:
 
-Speed presets are in `include/menu.h` (`SPEED_PRESETS`).
+- 10k NTC (`B = 3950`) model from `TM1`
+- invalid ranges produce `N/A`
 
-- `attack`: forward/engage speed
-- `search`: no-target search speed
-- `turn_moderate`, `turn_gentle`: turning speeds
+## Buzzer Alerts
 
-## How to Change Behavior Quickly
+- `< 6.0V`: alarms disabled/reset
+- crossing below `12.2V`: warning pattern (3 beeps)
+- `< 11.3V`: continuous alarm
 
-1. Change strategy constants and presets in `include/menu.h`.
-2. Edit strategy logic in `src/robot.cpp`:
-   - `updateBehavior_Sting()`
-   - `updateBehavior_Speed()`
-   - `updateBehavior_Run()`
-   - `updateBehavior_IMUHold()`
-3. If motor direction is inverted on hardware, adjust `Motor::drive()` direction flags in `src/motors.cpp`.
-4. If pin routing changes between PCBs, update `include/pins.h` only.
+## Runtime Cadence
 
-## Runtime Cadence and Tuning
+- control task: `2 ms`
+- UI task: `30 ms`
+- display throttle: `30 ms`
+- I2C bus: `400 kHz`
+- PWM: `5 kHz`, `0..255`
 
-- Control task runs every `2 ms` (`CONTROL_TASK_INTERVAL_MS`).
-- UI redraw task runs every `30 ms` (`UI_TASK_INTERVAL_MS`).
-- Melody playback is non-blocking and progresses via `updateMelody()`.
-- I2C is configured to `400 kHz` after startup.
-- Motor PWM is configured to `5 kHz` with 8-bit range (`0..255`).
+## Feature Flags and Debug
 
-## Fault Tolerance
+From `include/defines.h`:
 
-- If MCP23017 expander init fails, firmware skips keypad reads and continues running.
-- Expander interrupt checks return no event while unavailable instead of halting the robot.
+- `ENABLE_QTR_LINE_SENSORS = 0` (default disabled)
+- `DEBUG_ROBOT_BOOT = 0`
+- `DEBUG_IMU_INIT = 0`
+- `DEBUG_IMU_RUNTIME = 0`
+- `DEBUG_I2C_ERRORS = 0`
 
-## Debug Gates
+## Useful Files
 
-- `DEBUG_ROBOT_BOOT`
-- `DEBUG_IMU_INIT`
-- `DEBUG_IMU_RUNTIME`
-- `DEBUG_I2C_ERRORS`
-
-## Competition Mode (Match Day)
-
-Use this checklist before a real match to minimize noise and runtime overhead:
-
-1. Disable all debug output in `include/defines.h`:
-   - `DEBUG_ROBOT_BOOT = 0`
-   - `DEBUG_IMU_INIT = 0`
-   - `DEBUG_IMU_RUNTIME = 0`
-   - `DEBUG_I2C_ERRORS = 0`
-2. Keep scheduler cadence at current tuned values:
-   - `CONTROL_TASK_INTERVAL_MS = 2`
-   - `UI_TASK_INTERVAL_MS = 30`
-   - `ADC_CACHE_INTERVAL_MS = 1000`
-3. Keep motor PWM at `5 kHz` unless motor heat/noise testing suggests otherwise.
-4. Keep I2C at `400 kHz` if stable on your board.
-5. If I2C communication glitches appear under match conditions, temporarily drop to `100 kHz` in `Robot::setup()` (`Wire.setClock(100000)`) for maximum bus margin.
-6. If you want completely silent startup, disable melody start from robot setup (or gate it with a compile-time flag).
-
-## Data/Control Diagram
-
-```mermaid
-flowchart LR
-    Keys[Expander keys] --> Button[ButtonManager]
-    Button --> Robot[Robot state machine]
-    IR[IR + QTR sensors] --> Robot
-    IMU[IMU gyro/accel] --> Robot
-    Robot --> Motor[Motor outputs]
-    Robot --> Display[OLED screens]
-```
+- `src/robot.cpp`: behavior + state machine + diagnostics motor test
+- `src/display.cpp`: menu rendering and diagnostics screen
+- `src/main.cpp`: scheduler + menu dispatch
+- `lib/IMU/src/IMU.cc`: BMI323 init/read/heading integration
+- `test/i2c_scanner.cpp`: standalone I2C scanner utility

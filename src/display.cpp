@@ -112,8 +112,6 @@ static const unsigned char PROGMEM image_Pin_arrow_right_bits[] = {0x04, 0x00, 0
 
 const char *strategy_names[] = {"Sting", "Speed", "Run", "IMU"};
 
-const char *start_routine_names[] = {"Straight", "Left Arc", "Right Arc", "Spin Wait"};
-
 void Display::drawStrategySelectorScreen(int currentStrategy)
 {
     display.clearDisplay();
@@ -144,37 +142,6 @@ void Display::drawStrategySelectorScreen(int currentStrategy)
         {
             display.setCursor(30, y_positions[i]);
             display.print(strategy_names[i]);
-        }
-    }
-
-    display.display();
-}
-
-void Display::drawStartRoutineSelectorScreen(int currentStartRoutine)
-{
-    display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
-    display.setTextSize(1);
-    display.setTextWrap(false);
-
-    display.setCursor(0, 0);
-    display.print("START ROUTINE");
-
-    uint8_t y_positions[] = {14, 26, 38, 50};
-
-    for (int i = 0; i < START_ROUTINE_COUNT; i++)
-    {
-        if (i == currentStartRoutine)
-        {
-            display.drawBitmap(15, y_positions[i] + 3, image_Pin_arrow_right_bits, 9, 7, 1);
-            display.setCursor(30, y_positions[i]);
-            display.setTextSize(1);
-            display.print(start_routine_names[i]);
-        }
-        else
-        {
-            display.setCursor(30, y_positions[i]);
-            display.print(start_routine_names[i]);
         }
     }
 
@@ -285,7 +252,7 @@ void Display::drawSpeedSelectorScreen(int currentSpeedLevel)
     display.display();
 }
 
-void Display::drawBatteryVoltageScreen(float batteryVoltage, float adcVoltage, int rawAdc)
+void Display::drawBatteryTemperatureScreen(float batteryVoltage, float temperatureC, bool motorTestActive, int motorTestSelection)
 {
     if (!shouldUpdate())
         return;
@@ -294,66 +261,67 @@ void Display::drawBatteryVoltageScreen(float batteryVoltage, float adcVoltage, i
     display.setTextColor(SSD1306_WHITE);
     display.setTextWrap(false);
 
-    display.setTextSize(1);
-    display.setCursor(0, 0);
-    display.print("BATTERY");
+    if (motorTestActive)
+    {
+        const char *motorTestNames[] = {"forward", "backward", "right", "left"};
+        uint8_t y_positions[] = {14, 26, 38, 50};
 
-    display.setTextSize(2);
-    display.setCursor(0, 22);
-    display.print(batteryVoltage, 2);
-    display.print(" V");
+        display.setTextSize(1);
+        display.setCursor(0, 0);
+        display.print("motor test");
 
-    float percent = ((batteryVoltage - 10.0f) / (12.6f - 10.0f)) * 100.0f;
-    if (percent < 0.0f)
-        percent = 0.0f;
-    if (percent > 100.0f)
-        percent = 100.0f;
+        for (int i = 0; i < MOTOR_DIAG_COUNT; i++)
+        {
+            if (i == motorTestSelection)
+            {
+                display.drawBitmap(15, y_positions[i] + 3, image_Pin_arrow_right_bits, 9, 7, 1);
+                display.setCursor(30, y_positions[i]);
+                display.print(motorTestNames[i]);
+            }
+            else
+            {
+                display.setCursor(30, y_positions[i]);
+                display.print(motorTestNames[i]);
+            }
+        }
 
-    display.setTextSize(1);
-    display.setCursor(0, 44);
-    display.print("~");
-    display.print(percent, 0);
-    display.print("% (3S)");
-
-    display.setCursor(0, 54);
-    display.print("ADC:");
-    display.print(adcVoltage, 3);
-    display.print("V ");
-    display.print(rawAdc);
-
-    display.display();
-}
-
-void Display::drawTemperatureScreen(float temperatureC, float sensorVoltage)
-{
-    if (!shouldUpdate())
+        display.display();
         return;
+    }
 
-    display.clearDisplay();
-    display.setTextColor(SSD1306_WHITE);
-    display.setTextWrap(false);
+    char voltageText[16];
+    snprintf(voltageText, sizeof(voltageText), "%.2f V", batteryVoltage);
 
-    display.setTextSize(1);
-    display.setCursor(0, 0);
-    display.print("TEMP (TM1)");
-
-    display.setTextSize(2);
-    display.setCursor(0, 18);
+    char tempText[16];
     if (isnan(temperatureC))
     {
-        display.print("N/A");
+        snprintf(tempText, sizeof(tempText), "N/A C");
     }
     else
     {
-        display.print(temperatureC, 1);
-        display.print(" C");
+        snprintf(tempText, sizeof(tempText), "%.1f C", temperatureC);
     }
 
-    display.setTextSize(1);
-    display.setCursor(0, 50);
-    display.print("ADC: ");
-    display.print(sensorVoltage, 3);
-    display.print(" V");
+    auto drawCenteredLine = [this](const char *text, int16_t y, uint8_t size)
+    {
+        int16_t x1 = 0;
+        int16_t y1 = 0;
+        uint16_t w = 0;
+        uint16_t h = 0;
+        display.setTextSize(size);
+        display.getTextBounds(text, 0, y, &x1, &y1, &w, &h);
+        int16_t x = (SCREEN_WIDTH - static_cast<int16_t>(w)) / 2;
+        if (x < 0)
+        {
+            x = 0;
+        }
+        display.setCursor(x, y);
+        display.print(text);
+    };
+
+    drawCenteredLine("diagnostics", 2, 1);
+    drawCenteredLine(voltageText, 18, 2);
+    drawCenteredLine(tempText, 40, 2);
 
     display.display();
 }

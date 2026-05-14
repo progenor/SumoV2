@@ -15,11 +15,10 @@ static const unsigned long STING_TURN_COMMIT_MS = 50;
 
 Robot::Robot()
     : currentMode(MODE_MENU),
-      currentMenuScreen(MENU_SCREEN_MAIN),
+      currentMenuScreen(MENU_SCREEN_IR),
       paused(false),
       currentSpeedLevel(SPEED_LEVEL_LOW),
       currentStrategy(STRATEGY_STING),
-      currentStartRoutine(START_ROUTINE_STRAIGHT),
       currentMotorDirection(DIRECTION_STOP),
       lastLeftMotorPWM(0),
       lastRightMotorPWM(0),
@@ -57,7 +56,9 @@ Robot::Robot()
       imuSearchPhaseStartMs(0),
       imuSearchForwardPulse(false),
       stingRightCommitUntilMs(0),
-      stingCommittedTurnDirection(1)
+      stingCommittedTurnDirection(1),
+      diagnosticsMotorTestActive(false),
+      diagnosticsMotorTestSelection(MOTOR_DIAG_FORWARD)
 {
 }
 
@@ -527,30 +528,9 @@ void Robot::runIMUStartRoutine(unsigned long nowMs)
         return;
     }
 
-    switch (currentStartRoutine)
-    {
-    case START_ROUTINE_LEFT_ARC:
-        motor.drive(speedConfig.search_speed - 20, speedConfig.search_speed + 10, true, false);
-        setMotorPWM(speedConfig.search_speed - 20, speedConfig.search_speed + 10);
-        currentMotorDirection = DIRECTION_FORWARD;
-        break;
-    case START_ROUTINE_RIGHT_ARC:
-        motor.drive(speedConfig.search_speed + 10, speedConfig.search_speed - 20, true, false);
-        setMotorPWM(speedConfig.search_speed + 10, speedConfig.search_speed - 20);
-        currentMotorDirection = DIRECTION_FORWARD;
-        break;
-    case START_ROUTINE_SPIN_WAIT:
-        motor.drive(speedConfig.turn_speed_moderate, speedConfig.turn_speed_moderate, true, true);
-        setMotorPWM(speedConfig.turn_speed_moderate, speedConfig.turn_speed_moderate);
-        currentMotorDirection = DIRECTION_RIGHT;
-        break;
-    case START_ROUTINE_STRAIGHT:
-    default:
-        motor.drive(speedConfig.search_speed, speedConfig.search_speed, true, false);
-        setMotorPWM(speedConfig.search_speed, speedConfig.search_speed);
-        currentMotorDirection = DIRECTION_FORWARD;
-        break;
-    }
+    motor.drive(speedConfig.search_speed, speedConfig.search_speed, true, false);
+    setMotorPWM(speedConfig.search_speed, speedConfig.search_speed);
+    currentMotorDirection = DIRECTION_FORWARD;
 }
 
 void Robot::runIMUSearch(int *irValues)
@@ -834,6 +814,12 @@ void Robot::updateBehavior()
         previousStrategy = currentStrategy;
     }
 
+    if (diagnosticsMotorTestActive)
+    {
+        updateBehavior_DiagnosticsMotorTest();
+        return;
+    }
+
     switch (currentStrategy)
     {
     case STRATEGY_STING:
@@ -859,6 +845,11 @@ void Robot::handleKeypadAction(KeypadAction action)
     switch (action)
     {
     case KEYPAD_ACTION_H:
+        if (diagnosticsMotorTestActive)
+        {
+            exitDiagnosticsMotorTest();
+            break;
+        }
         if (currentMode == MODE_MENU)
         {
             cycleMenuScreenBackward();
@@ -866,6 +857,11 @@ void Robot::handleKeypadAction(KeypadAction action)
         break;
 
     case KEYPAD_ACTION_L:
+        if (diagnosticsMotorTestActive)
+        {
+            exitDiagnosticsMotorTest();
+            break;
+        }
         if (currentMode == MODE_MENU)
         {
             cycleMenuScreen();
@@ -881,9 +877,9 @@ void Robot::handleKeypadAction(KeypadAction action)
         {
             cycleStrategyBackward();
         }
-        else if (currentMenuScreen == MENU_SCREEN_START_ROUTINE)
+        else if (diagnosticsMotorTestActive)
         {
-            cycleStartRoutineBackward();
+            cycleDiagnosticsMotorTestBackward();
         }
         break;
 
@@ -896,9 +892,20 @@ void Robot::handleKeypadAction(KeypadAction action)
         {
             cycleStrategy();
         }
-        else if (currentMenuScreen == MENU_SCREEN_START_ROUTINE)
+        else if (currentMenuScreen == MENU_SCREEN_BATTERY)
         {
-            cycleStartRoutine();
+            if (!diagnosticsMotorTestActive)
+            {
+                enterDiagnosticsMotorTest();
+            }
+            else
+            {
+                cycleDiagnosticsMotorTest();
+            }
+        }
+        else if (diagnosticsMotorTestActive)
+        {
+            cycleDiagnosticsMotorTest();
         }
         break;
 
@@ -1004,11 +1011,6 @@ int Robot::getCurrentStrategy() const
     return currentStrategy;
 }
 
-int Robot::getCurrentStartRoutine() const
-{
-    return currentStartRoutine;
-}
-
 int Robot::getCurrentDirection() const
 {
     return currentMotorDirection;
@@ -1022,6 +1024,16 @@ int Robot::getCurrentLeftMotorPWM() const
 int Robot::getCurrentRightMotorPWM() const
 {
     return lastRightMotorPWM;
+}
+
+bool Robot::isDiagnosticsMotorTestActive() const
+{
+    return diagnosticsMotorTestActive;
+}
+
+int Robot::getDiagnosticsMotorTestSelection() const
+{
+    return diagnosticsMotorTestSelection;
 }
 
 float Robot::getBatteryVoltage()
@@ -1155,6 +1167,63 @@ void Robot::cycleStrategyBackward()
     setStrategy((currentStrategy + STRATEGY_COUNT - 1) % STRATEGY_COUNT);
 }
 
+void Robot::enterDiagnosticsMotorTest()
+{
+    diagnosticsMotorTestActive = true;
+    diagnosticsMotorTestSelection = MOTOR_DIAG_FORWARD;
+}
+
+void Robot::exitDiagnosticsMotorTest()
+{
+    diagnosticsMotorTestActive = false;
+}
+
+void Robot::cycleDiagnosticsMotorTest()
+{
+    diagnosticsMotorTestSelection = (diagnosticsMotorTestSelection + 1) % MOTOR_DIAG_COUNT;
+}
+
+void Robot::cycleDiagnosticsMotorTestBackward()
+{
+    diagnosticsMotorTestSelection = (diagnosticsMotorTestSelection + MOTOR_DIAG_COUNT - 1) % MOTOR_DIAG_COUNT;
+}
+
+void Robot::updateBehavior_DiagnosticsMotorTest()
+{
+    if (paused)
+    {
+        motor.stop();
+        setMotorPWM(0, 0);
+        currentMotorDirection = DIRECTION_STOP;
+        return;
+    }
+    int testSpeed = 90;
+    switch (diagnosticsMotorTestSelection)
+    {
+    case MOTOR_DIAG_FORWARD:
+        motor.forward(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_FORWARD;
+        break;
+    case MOTOR_DIAG_BACKWARD:
+        motor.backward(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_BACKWARD;
+        break;
+    case MOTOR_DIAG_RIGHT:
+        motor.right(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_RIGHT;
+        break;
+    case MOTOR_DIAG_LEFT:
+    default:
+        motor.left(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_LEFT;
+        break;
+    }
+}
+
 void Robot::setStrategy(int strategy)
 {
     if (strategy >= 0 && strategy < STRATEGY_COUNT)
@@ -1166,22 +1235,4 @@ void Robot::setStrategy(int strategy)
 void Robot::cycleStrategy()
 {
     setStrategy((currentStrategy + 1) % STRATEGY_COUNT);
-}
-
-void Robot::setStartRoutine(int startRoutine)
-{
-    if (startRoutine >= 0 && startRoutine < START_ROUTINE_COUNT)
-    {
-        currentStartRoutine = startRoutine;
-    }
-}
-
-void Robot::cycleStartRoutine()
-{
-    setStartRoutine((currentStartRoutine + 1) % START_ROUTINE_COUNT);
-}
-
-void Robot::cycleStartRoutineBackward()
-{
-    setStartRoutine((currentStartRoutine + START_ROUTINE_COUNT - 1) % START_ROUTINE_COUNT);
 }

@@ -48,10 +48,8 @@ public:
     void drawSensorReadingsScreen(int *irValues, int irCount);
     void drawStatusScreen(RobotMode mode, bool isPaused, int currentScreen);
     void drawStrategySelectorScreen(int currentStrategy);
-    void drawStartRoutineSelectorScreen(int currentStartRoutine);
     void drawDirectionIndicatorScreen(int motorDirection, int leftMotorPWM, int rightMotorPWM);
-    void drawBatteryVoltageScreen(float batteryVoltage, float adcVoltage, int rawAdc);
-    void drawTemperatureScreen(float temperatureC, float sensorVoltage);
+    void drawBatteryTemperatureScreen(float batteryVoltage, float temperatureC, bool motorTestActive, int motorTestSelection);
 
 private:
     Adafruit_SSD1306 display;
