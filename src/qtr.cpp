@@ -10,13 +10,23 @@ QTRSensors::QTRSensors()
 
 void QTRSensors::setup()
 {
+
 }
 
 void QTRSensors::read()
 {
-    for (int i = 0; i < QTRCount; i++)
+
+    for(int i = 0; i < QTRCount; i++)
     {
-        sensorValues[i] = digitalRead(QTRPins[i]);
+
+        pinMode(QTRPins[i], OUTPUT);
+        digitalWrite(QTRPins[i], HIGH);
+        delayMicroseconds(10);
+        pinMode(QTRPins[i], INPUT);
+        unsigned long startTime = micros();
+        while (digitalRead(QTRPins[i]) == HIGH){}
+
+        sensorValues[i] = micros() - startTime;
     }
 }
 

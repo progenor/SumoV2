@@ -47,9 +47,9 @@
 
 // Robot behavior uses a 3-sensor subset.
 #define SENSOR_LEFT IR3_PIN
-#define SENSOR_CENTER_LEFT IR1_PIN
+#define SENSOR_CENTER_LEFT IR2_PIN
 #define SENSOR_CENTER IR4_PIN
-#define SENSOR_CENTER_RIGHT IR2_PIN
+#define SENSOR_CENTER_RIGHT IR1_PIN
 #define SENSOR_RIGHT IR5_PIN
 
 void testDriections();
