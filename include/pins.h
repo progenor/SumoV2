@@ -41,20 +41,26 @@
 #define IR4_PIN 9
 #define IR5_PIN 10
 
+// QTR
+#define QTR1_PIN 21
+#define QTR2_PIN 22
+
 // Robot behavior uses a 3-sensor subset.
 #define SENSOR_LEFT IR3_PIN
+#define SENSOR_CENTER_LEFT IR1_PIN
 #define SENSOR_CENTER IR4_PIN
+#define SENSOR_CENTER_RIGHT IR2_PIN
 #define SENSOR_RIGHT IR5_PIN
 
 void testDriections();
 // Extra two digital sensors mapped as QTR-compatible inputs.
-#define QTR_LEFT IR4_PIN
-#define QTR_RIGHT IR5_PIN
+#define QTR_LEFT QTR1_PIN
+#define QTR_RIGHT QTR2_PIN
 
 // Button Pin
 #define BUTTON_PIN 20
 
-const uint8_t IRPins[] = {SENSOR_LEFT, SENSOR_CENTER, SENSOR_RIGHT};
+const uint8_t IRPins[] = {SENSOR_LEFT, SENSOR_CENTER_LEFT, SENSOR_CENTER, SENSOR_CENTER_RIGHT, SENSOR_RIGHT};
 const uint8_t QTRPins[] = {QTR_LEFT, QTR_RIGHT};
 
 void setupPins();
