@@ -1066,7 +1066,7 @@ float Robot::getBatteryVoltageFromRaw(int rawAdc)
 
     float vAdc = getBatteryAdcVoltageFromRaw(rawAdc);
     // float correctedAdc = vAdc - BATTERY_ADC_OFFSET_V;
-    float correctedAdc = vAdc + 0.12f; // Adjusted to match measured values better
+    float correctedAdc = vAdc + 0.24f; // Adjusted to match measured values better
     if (correctedAdc < 0.0f)
     {
         correctedAdc = 0.0f;
