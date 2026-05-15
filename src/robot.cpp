@@ -283,12 +283,12 @@ void Robot::updateBehavior_Speed()
         motor.forward(speedConfig.attack_speed);
         currentMotorDirection = DIRECTION_FORWARD;
     }
-    else if (irValues[1] == 1 && irValues[2] == 1)
+    else if (irValues[1] == 1)
     {
         motor.left(speedConfig.turn_speed_gentle);
         currentMotorDirection = DIRECTION_LEFT;
     }
-    else if (irValues[2] == 1 && irValues[3] == 1)
+    else if (irValues[3] == 1)
     {
         motor.right(speedConfig.turn_speed_gentle);
         currentMotorDirection = DIRECTION_RIGHT;
@@ -316,20 +316,20 @@ void Robot::updateBehavior_Sting()
     unsigned long nowMs = millis();
     int *irValues = irSensors.getAllValues();
 
-    if (nowMs < stingRightCommitUntilMs)
-    {
-        if (stingCommittedTurnDirection < 0)
-        {
-            motor.left(speedConfig.turn_speed_moderate);
-            currentMotorDirection = DIRECTION_LEFT;
-        }
-        else
-        {
-            motor.right(speedConfig.turn_speed_moderate);
-            currentMotorDirection = DIRECTION_RIGHT;
-        }
-    }
-    else if (irValues[1] == 1 || irValues[2] == 1 || irValues[3] == 1)
+    // if (nowMs < stingRightCommitUntilMs)
+    // {
+    //     if (stingCommittedTurnDirection < 0)
+    //     {
+    //         motor.left(speedConfig.turn_speed_moderate);
+    //         currentMotorDirection = DIRECTION_LEFT;
+    //     }
+    //     else
+    //     {
+    //         motor.right(speedConfig.turn_speed_moderate);
+    //         currentMotorDirection = DIRECTION_RIGHT;
+    //     }
+    // }
+    if (irValues[1] == 1 || irValues[2] == 1 || irValues[3] == 1)
     {
         stingRightCommitUntilMs = 0;
         stingCommittedTurnDirection = 1;
