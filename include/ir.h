@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "pins.h"
 
-#define IRCount 3
+#define IRCount 5
 #define DEBOUNCE_THRESHOLD 3
 
 class IRSensors

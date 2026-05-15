@@ -2,15 +2,14 @@
 #define MENU_H
 
 // Menu screen indices
-#define MENU_SCREEN_MAIN 0
+#define MENU_SCREEN_MAIN 5
 #define MENU_SCREEN_SPEED 1
-#define MENU_SCREEN_IR 2
-#define MENU_SCREEN_STRATEGY 3
-#define MENU_SCREEN_START_ROUTINE 4
-#define MENU_SCREEN_DIRECTION 5
-#define MENU_SCREEN_BATTERY 6
-#define MENU_SCREEN_TEMP 7
-#define MENU_SCREEN_COUNT 8
+#define MENU_SCREEN_IR 0
+#define MENU_SCREEN_QTR 6
+#define MENU_SCREEN_STRATEGY 2
+#define MENU_SCREEN_DIRECTION 4
+#define MENU_SCREEN_BATTERY 3
+#define MENU_SCREEN_COUNT 7
 
 // Robot mode enumeration
 enum RobotMode
@@ -41,11 +40,11 @@ struct SpeedPreset
 // Preset configurations
 static const SpeedPreset SPEED_PRESETS[SPEED_LEVEL_COUNT] = {
     // LOW
-    {60, 40, 40, 10},
+    {60, 40, 40, 50},
     // MEDIUM
-    {128, 50, 80, 15},
+    {128, 50, 100, 50},
     // HIGH
-    {255, 50, 100, 25}};
+    {255, 50, 100, 50}};
 
 // Strategy enumeration
 enum Strategy
@@ -60,10 +59,16 @@ enum Strategy
 enum StartRoutine
 {
     START_ROUTINE_STRAIGHT = 0,
-    START_ROUTINE_LEFT_ARC = 1,
-    START_ROUTINE_RIGHT_ARC = 2,
-    START_ROUTINE_SPIN_WAIT = 3,
-    START_ROUTINE_COUNT = 4
+    START_ROUTINE_COUNT = 1
+};
+
+enum MotorDiagnosticsSelection
+{
+    MOTOR_DIAG_FORWARD = 0,
+    MOTOR_DIAG_BACKWARD = 1,
+    MOTOR_DIAG_RIGHT = 2,
+    MOTOR_DIAG_LEFT = 3,
+    MOTOR_DIAG_COUNT = 4
 };
 
 // Motor direction enumeration

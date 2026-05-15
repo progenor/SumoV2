@@ -1,97 +1,108 @@
 # SumoV2 Project Architecture
 
-SumoV2 now follows the same high-level structure as MiniSumo2026:
-
-- `main.cpp` handles the top-level loop only.
-- `Robot` is the orchestrator for setup, update, and strategy dispatch.
-- `Motor`, `IR`, `QTR`, `Display`, `ButtonManager`, and `IMU` are isolated subsystems.
-- `ButtonManager` reads keypad events from the IO expander while other expander pins remain generic inputs.
+This document reflects the current firmware behavior on branch `IMU-changes`.
 
 ## System Overview
 
+- `src/main.cpp` runs the scheduler and menu rendering.
+- `src/robot.cpp` owns behavior logic, strategy dispatch, diagnostics motor test, battery/temperature cache, and buzzer logic.
+- Subsystems are isolated: `Motor`, `IRSensors`, `QTRSensors`, `IMU`, `Display`, `ButtonManager`, `HeadingController`.
+
 ```mermaid
 graph TD
-    Main[main.cpp loop] --> Button[ButtonManager via MCP23X17]
-    Main --> Robot[Robot orchestrator]
+        Main[main.cpp loop] --> Buttons[ButtonManager/MCP23017]
+        Main --> Robot[Robot.update]
+        Main --> UI[Display drawMenuScreen]
 
-    Robot --> Display[Display]
-    Robot --> Motor[Motor driver wrapper]
-    Robot --> IR[IR sensors]
-    Robot --> QTR[QTR sensors]
-    Robot --> IMU[IMU BMI323]
-    Robot --> Melody[Melody startup]
+        Robot --> Motor[Motor driver]
+        Robot --> IR[IR sensors]
+        Robot --> QTR[QTR sensors optional]
+        Robot --> IMU[BMI323]
+        Robot --> Buzzer[Buzzer alarms]
+        Robot --> ADC[Battery + TM1 cache]
 ```
 
-## Setup and Loop Flow
+## Scheduler and Timing
 
-```mermaid
-sequenceDiagram
-    participant A as Arduino
-    participant R as Robot
-    participant B as ButtonManager
+- Control task: `2 ms` (`CONTROL_TASK_INTERVAL_MS`).
+- UI redraw task: `30 ms` (`UI_TASK_INTERVAL_MS`).
+- Shared ADC cache refresh: `1000 ms` (`ADC_CACHE_INTERVAL_MS`).
+- I2C clock: `400 kHz` (`Wire.setClock(400000)`).
+- Motor PWM: 8-bit range `0..255`, frequency `5 kHz`.
 
-    A->>R: setup()
-    R->>R: setupPins + display + motor + IR/QTR + IMU
-    A->>B: setup() (expander init)
+## Menu Screens (Current Order)
 
-    loop every scheduler tick
-        A->>B: update()
-        B-->>A: keypad action (h/j/k/l)
-        A->>R: handleKeypadAction(action)
-        A->>R: update() every 2 ms (control task)
-        A->>R: render menu every 30 ms (UI task)
-        A->>A: updateMelody() non-blocking each loop
-    end
-```
+Defined in `include/menu.h`:
 
-## Runtime Scheduling (Current)
+- `MENU_SCREEN_IR = 0`
+- `MENU_SCREEN_SPEED = 1`
+- `MENU_SCREEN_STRATEGY = 2`
+- `MENU_SCREEN_BATTERY = 3` (merged diagnostics page)
+- `MENU_SCREEN_DIRECTION = 4`
+- `MENU_SCREEN_MAIN = 5`
 
-- Control task interval: `2 ms` (`CONTROL_TASK_INTERVAL_MS`).
-- UI/menu redraw interval: `30 ms` (`UI_TASK_INTERVAL_MS`).
-- Slow task interval constant: `1000 ms` (`SLOW_TASK_INTERVAL_MS`, reserved for slow periodic work).
+Total: `MENU_SCREEN_COUNT = 6`.
 
-This keeps sensor/behavior response fast while display work is decoupled from control timing.
+## Diagnostics Screen
 
-## Startup and Fault Tolerance
+`MENU_SCREEN_BATTERY` now serves as diagnostics:
 
-- IO expander init is now fail-safe; if MCP23017 is unavailable at boot, robot setup continues and keypad input is skipped.
-- Melody startup is non-blocking; `playMelody()` starts playback and `updateMelody()` advances notes using `millis()`.
-- IMU initialization delays remain in place (sensor stability requirement).
+- Default diagnostics view: centered title (`diagnostics`) + two large lines.
+- Line 1 shows battery voltage (`xx.xx V`).
+- Line 2 shows temperature (`xx.x C` or `N/A C`).
+- Press `k` while on diagnostics to enter motor test submenu.
+- Motor test submenu options:
+  `forward`, `backward`, `right`, `left`.
+- While motor test is active:
+  `j`/`k` changes selection, selected action runs continuously in
+  `updateBehavior_DiagnosticsMotorTest()`, and `h` or `l` exits test mode.
 
-## Performance-Oriented Runtime Details
+## Keypad Mapping
 
-- ADC cache cadence: battery and temperature values are sampled every `1000 ms` and reused between samples.
-- I2C bus speed: set to `400 kHz` after `Wire.begin()`.
-- Motor PWM settings for Pololu G2 class drivers use PWM frequency `5 kHz` and range `0..255`.
-- Debug logs are compile-time gated via `DEBUG_ROBOT_BOOT`, `DEBUG_IMU_INIT`, `DEBUG_IMU_RUNTIME`, `DEBUG_I2C_ERRORS`.
+Via MCP23X17:
 
-## Strategy Dispatch
+- `h`: previous screen (or exit motor test)
+- `l`: next screen (or exit motor test)
+- `j`: decrement/cycle backward (speed, strategy, or motor test option)
+- `k`: increment/cycle forward (speed, strategy, enter/cycle motor test)
 
-```mermaid
-flowchart TD
-    Start[Robot updateBehavior] --> Pick{Current strategy}
-    Pick -->|STING| Sting[Center priority attack]
-    Pick -->|SPEED| Speed[Fast pursuit and spin search]
-    Pick -->|RUN| Run[Retreat behavior]
-    Pick -->|IMU_HOLD| IMU[IR attack + gyro-z heading correction]
-```
+## Strategy Behavior Summary
 
-## Runtime Mode Notes
+- `STRATEGY_STING`
+  center sensor attacks forward; left/right detections commit turns for
+  `50 ms` (`STING_TURN_COMMIT_MS`).
+- `STRATEGY_SPEED`
+  aggressive IR-based forward/turn behavior.
+- `STRATEGY_RUN`
+  retreat-style behavior.
+- `STRATEGY_IMU_HOLD`
+  straight start routine only (`550 ms`), IR + IMU heading hold with PID,
+  short recoil before attack lock (`40 ms`, `IMU_ATTACK_RECOIL_MS`), and
+  search/evasion/edge-recovery state machine.
 
-- `MODE_MENU`: user navigates screens and changes speed/strategy.
-- `MODE_PAUSED`: motors are stopped.
-- `MODE_RUNNING`: active behavior loop (ready for expansion).
-- Includes a dedicated battery voltage menu screen (`MENU_SCREEN_BATTERY`).
-- Includes a dedicated temperature menu screen (`MENU_SCREEN_TEMP`, source: `TM1` 10k NTC divider).
+## Sensors and Feature Flags
 
-## Pin Policy
+- IR sensors: 3 digital inputs with debounce (`DEBOUNCE_THRESHOLD = 3`).
+- QTR edge sensors: optional and compile-time gated.
+  `ENABLE_QTR_LINE_SENSORS = 0` by default.
+- IMU availability is probed at startup; robot continues if IMU init fails.
 
-This repo keeps mixed-valid mapping on purpose:
+## Battery and Temperature Pipeline
 
-- Discrete motor-driver pins (`ENM1/ENM2/PWM1/PWM2/DIR1/DIR2`) are used by the new `Motor` class.
-- Legacy `PWM_Ax/PWM_Bx/N_SLEEP` defines are kept in `pins.h` for compatibility and future profile switching.
-- Expander channels are modeled as generic pins (`EXP_PIN_0..EXP_PIN_7`) with explicit keypad aliases in `defines.h`.
+- Battery from GP28 (`VLEVEL`) via divider.
+- Temperature from GP26 (`TM1`, NTC model).
+- Readings are cached and reused between cache intervals.
+- Current battery conversion in code:
+  `Vadc = raw / 4095 * 3.3`; `Vbat = max(0, (Vadc + 0.12)) * 6.6`.
 
-## Full PCB Docs
+## Buzzer Alerts
 
-The full net mapping used by firmware is documented in `docs/PCB_SCHEMATIC_MAP.md`.
+- `< 6.0V`: alarms disabled/reset (USB-floor protection).
+- crossing below `12.2V`: warning pattern (3 beeps, 500 ms transitions).
+- `< 11.3V`: continuous alarm.
+
+## Notes
+
+- `MODE_RUNNING` exists but normal operation is effectively menu-driven + behavior update.
+- `updateMelody()` is still called in loop; startup `playMelody()` is currently commented out in `Robot::setup()`.
+- `StartRoutine` enum remains but only `START_ROUTINE_STRAIGHT` is used.

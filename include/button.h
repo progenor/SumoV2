@@ -9,7 +9,10 @@ enum KeypadAction
     KEYPAD_ACTION_H,
     KEYPAD_ACTION_J,
     KEYPAD_ACTION_K,
-    KEYPAD_ACTION_L
+    KEYPAD_ACTION_L,
+    ACTION_BTN_MENU,
+    ACTION_BTN_CHANGE_SINGLE,
+    ACTION_BTN_CHANGE_DOUBLE
 };
 
 class ButtonManager
@@ -25,6 +28,12 @@ public:
 private:
     KeypadAction detectedAction;
     unsigned long lastEventMs;
+
+    unsigned long gpa0PressTimeMs;
+    int gpa0ClickState;
+
+    unsigned long gp20PressTimeMs;
+    bool gp20WasPressed;
 
     KeypadAction mapExpanderPinToAction(int pin);
 };

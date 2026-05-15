@@ -25,7 +25,9 @@
 
 // Feature flags
 // Set to 1 when QTR line sensors are physically installed and wired.
-#define ENABLE_QTR_LINE_SENSORS 0
+#define ENABLE_QTR_LINE_SENSORS 1
+#define QTR_COUNT 2
+#define LINE_THRESHOLD 150
 
 // TM1 temperature monitor conversion (10k NTC, B=3950)
 #define TEMP_NTC_PULLUP_VOLTAGE 5.0f
@@ -36,9 +38,7 @@
 
 // Battery monitor calibration factor.
 // Two-point fit from measured values:
-// 12.6V @ 2.62V ADC and 11.1V @ 2.40V ADC.
-// This behaves like an ADC bias of ~0.715V before divider scaling.
-#define BATTERY_ADC_OFFSET_V 0.715f
+#define BATTERY_ADC_OFFSET_V 0.505f
 
 // --- Speed Configuration Structure ---
 // These are runtime-mutable values, can be changed from menu
@@ -87,6 +87,9 @@ static const uint8_t KEYPAD_KEY_4_PIN = EXP_PIN_3;
 static const uint8_t INPUT_IR6_PIN = EXP_PIN_1;
 static const uint8_t INPUT_CS_1_PIN = EXP_PIN_6;
 static const uint8_t INPUT_CS_2_PIN = EXP_PIN_7;
+
+// Redundancy Menu button
+#define REDUNDANCY_BTN_MENU_PIN 20
 
 // Vim-style keypad bindings (4 keys)
 // h: left, j: down, k: up, l: right

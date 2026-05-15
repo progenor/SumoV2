@@ -15,11 +15,10 @@ static const unsigned long STING_TURN_COMMIT_MS = 50;
 
 Robot::Robot()
     : currentMode(MODE_MENU),
-      currentMenuScreen(MENU_SCREEN_MAIN),
+      currentMenuScreen(MENU_SCREEN_IR),
       paused(false),
       currentSpeedLevel(SPEED_LEVEL_LOW),
       currentStrategy(STRATEGY_STING),
-      currentStartRoutine(START_ROUTINE_STRAIGHT),
       currentMotorDirection(DIRECTION_STOP),
       lastLeftMotorPWM(0),
       lastRightMotorPWM(0),
@@ -57,7 +56,14 @@ Robot::Robot()
       imuSearchPhaseStartMs(0),
       imuSearchForwardPulse(false),
       stingRightCommitUntilMs(0),
-      stingCommittedTurnDirection(1)
+      stingCommittedTurnDirection(1),
+      isBackingOffFromLine(false),
+      lineBackoffStartMs(0),
+      diagnosticsMotorTestActive(false),
+      diagnosticsMotorTestSelection(MOTOR_DIAG_FORWARD),
+      qtrConfigActive(false),
+      qtrConfigSelection(0),
+      qtrThreshold(LINE_THRESHOLD)
 {
 }
 
@@ -135,7 +141,16 @@ void Robot::update()
 #endif
     }
 
-    updateBehavior();
+    // Check line sensors and back off if detected (works for all strategies)
+    if (qtrLineSensorsEnabled)
+    {
+        checkLineSensorsAndBackoff(200); // 200ms backoff duration
+    }
+    else
+    {
+        updateBehavior();
+    }
+
     updateBatteryBuzzer();
 
     if (currentMode != MODE_MENU)
@@ -199,9 +214,9 @@ void Robot::stopBuzzerAlarm()
 
 void Robot::updateBatteryBuzzer()
 {
-    const float usbFloorV = 6.0f;
-    const float warningThresholdV = 12.2f;
-    const float criticalThresholdV = 11.3f;
+    const float usbFloorV = 10.0f;
+    const float warningThresholdV = 22.0f;
+    const float criticalThresholdV = 20.0f;
 
     float currentBatteryV = getBatteryVoltage();
 
@@ -263,19 +278,23 @@ void Robot::updateBatteryBuzzer()
 
 void Robot::updateBehavior_Speed()
 {
-    if (paused)
-    {
-        motor.stop();
-        currentMotorDirection = DIRECTION_STOP;
-        return;
-    }
 
     int *irValues = irSensors.getAllValues();
 
-    if (irValues[1] == 1)
+    if (irValues[2] == 1)
     {
         motor.forward(speedConfig.attack_speed);
         currentMotorDirection = DIRECTION_FORWARD;
+    }
+    else if (irValues[1] == 1)
+    {
+        motor.left(speedConfig.turn_speed_gentle);
+        currentMotorDirection = DIRECTION_LEFT;
+    }
+    else if (irValues[3] == 1)
+    {
+        motor.right(speedConfig.turn_speed_gentle);
+        currentMotorDirection = DIRECTION_RIGHT;
     }
     else if (irValues[0] == 1)
     {
@@ -296,37 +315,29 @@ void Robot::updateBehavior_Speed()
 
 void Robot::updateBehavior_Sting()
 {
-    if (paused)
-    {
-        motor.stop();
-        currentMotorDirection = DIRECTION_STOP;
-        stingRightCommitUntilMs = 0;
-        stingCommittedTurnDirection = 1;
-        return;
-    }
 
     unsigned long nowMs = millis();
     int *irValues = irSensors.getAllValues();
 
-    if (irValues[1] == 1)
+    // if (nowMs < stingRightCommitUntilMs)
+    // {
+    //     if (stingCommittedTurnDirection < 0)
+    //     {
+    //         motor.left(speedConfig.turn_speed_moderate);
+    //         currentMotorDirection = DIRECTION_LEFT;
+    //     }
+    //     else
+    //     {
+    //         motor.right(speedConfig.turn_speed_moderate);
+    //         currentMotorDirection = DIRECTION_RIGHT;
+    //     }
+    // }
+    if (irValues[1] == 1 || irValues[2] == 1 || irValues[3] == 1)
     {
         stingRightCommitUntilMs = 0;
         stingCommittedTurnDirection = 1;
         motor.forward(speedConfig.attack_speed);
         currentMotorDirection = DIRECTION_FORWARD;
-    }
-    else if (nowMs < stingRightCommitUntilMs)
-    {
-        if (stingCommittedTurnDirection < 0)
-        {
-            motor.left(speedConfig.turn_speed_moderate);
-            currentMotorDirection = DIRECTION_LEFT;
-        }
-        else
-        {
-            motor.right(speedConfig.turn_speed_moderate);
-            currentMotorDirection = DIRECTION_RIGHT;
-        }
     }
     else if (irValues[0] == 1)
     {
@@ -335,7 +346,7 @@ void Robot::updateBehavior_Sting()
         motor.left(speedConfig.turn_speed_moderate);
         currentMotorDirection = DIRECTION_LEFT;
     }
-    else if (irValues[2] == 1)
+    else if (irValues[4] == 1)
     {
         stingCommittedTurnDirection = 1;
         stingRightCommitUntilMs = nowMs + STING_TURN_COMMIT_MS;
@@ -527,30 +538,9 @@ void Robot::runIMUStartRoutine(unsigned long nowMs)
         return;
     }
 
-    switch (currentStartRoutine)
-    {
-    case START_ROUTINE_LEFT_ARC:
-        motor.drive(speedConfig.search_speed - 20, speedConfig.search_speed + 10, true, false);
-        setMotorPWM(speedConfig.search_speed - 20, speedConfig.search_speed + 10);
-        currentMotorDirection = DIRECTION_FORWARD;
-        break;
-    case START_ROUTINE_RIGHT_ARC:
-        motor.drive(speedConfig.search_speed + 10, speedConfig.search_speed - 20, true, false);
-        setMotorPWM(speedConfig.search_speed + 10, speedConfig.search_speed - 20);
-        currentMotorDirection = DIRECTION_FORWARD;
-        break;
-    case START_ROUTINE_SPIN_WAIT:
-        motor.drive(speedConfig.turn_speed_moderate, speedConfig.turn_speed_moderate, true, true);
-        setMotorPWM(speedConfig.turn_speed_moderate, speedConfig.turn_speed_moderate);
-        currentMotorDirection = DIRECTION_RIGHT;
-        break;
-    case START_ROUTINE_STRAIGHT:
-    default:
-        motor.drive(speedConfig.search_speed, speedConfig.search_speed, true, false);
-        setMotorPWM(speedConfig.search_speed, speedConfig.search_speed);
-        currentMotorDirection = DIRECTION_FORWARD;
-        break;
-    }
+    motor.drive(speedConfig.search_speed, speedConfig.search_speed, true, false);
+    setMotorPWM(speedConfig.search_speed, speedConfig.search_speed);
+    currentMotorDirection = DIRECTION_FORWARD;
 }
 
 void Robot::runIMUSearch(int *irValues)
@@ -823,6 +813,43 @@ void Robot::runIMUEdgeRecovery(int *qtrValues, unsigned long nowMs)
     beginIMUSearchPhase(nowMs);
 }
 
+void Robot::checkLineSensorsAndBackoff(int backoffDurationMs)
+{
+#if ENABLE_QTR_LINE_SENSORS
+    int *qtrValues = qtrSensors.getAllValues();
+    qtrSensors.printAllValues();
+    bool lineDetected = (qtrValues[0] < qtrThreshold) || (qtrValues[1] < qtrThreshold);
+    unsigned long nowMs = millis();
+
+    // If a line is detected and we're not already backing off, start the backup
+    if (lineDetected && !isBackingOffFromLine)
+    {
+        isBackingOffFromLine = true;
+        lineBackoffStartMs = nowMs;
+    }
+
+    // If we're in backup mode, continue backing off and check if time has elapsed
+    if (isBackingOffFromLine)
+    {
+        motor.backward(speedConfig.attack_speed);
+        currentMotorDirection = DIRECTION_BACKWARD;
+
+        unsigned long elapsedMs = nowMs - lineBackoffStartMs;
+        if (elapsedMs >= (unsigned long)backoffDurationMs)
+        {
+            // Backup duration complete, stop and clear the backup flag
+            motor.stop();
+            currentMotorDirection = DIRECTION_STOP;
+            isBackingOffFromLine = false;
+        }
+    }
+    else
+    {
+        updateBehavior();
+    }
+#endif
+}
+
 void Robot::updateBehavior()
 {
     if (currentStrategy != previousStrategy)
@@ -832,6 +859,12 @@ void Robot::updateBehavior()
             resetIMUStrategyState();
         }
         previousStrategy = currentStrategy;
+    }
+
+    if (diagnosticsMotorTestActive)
+    {
+        updateBehavior_DiagnosticsMotorTest();
+        return;
     }
 
     switch (currentStrategy)
@@ -859,6 +892,16 @@ void Robot::handleKeypadAction(KeypadAction action)
     switch (action)
     {
     case KEYPAD_ACTION_H:
+        if (diagnosticsMotorTestActive)
+        {
+            exitDiagnosticsMotorTest();
+            break;
+        }
+        if (qtrConfigActive)
+        {
+            adjustQtrConfigLevel(-1);
+            break;
+        }
         if (currentMode == MODE_MENU)
         {
             cycleMenuScreenBackward();
@@ -866,6 +909,16 @@ void Robot::handleKeypadAction(KeypadAction action)
         break;
 
     case KEYPAD_ACTION_L:
+        if (diagnosticsMotorTestActive)
+        {
+            exitDiagnosticsMotorTest();
+            break;
+        }
+        if (qtrConfigActive)
+        {
+            adjustQtrConfigLevel(1);
+            break;
+        }
         if (currentMode == MODE_MENU)
         {
             cycleMenuScreen();
@@ -881,9 +934,13 @@ void Robot::handleKeypadAction(KeypadAction action)
         {
             cycleStrategyBackward();
         }
-        else if (currentMenuScreen == MENU_SCREEN_START_ROUTINE)
+        else if (diagnosticsMotorTestActive)
         {
-            cycleStartRoutineBackward();
+            cycleDiagnosticsMotorTestBackward();
+        }
+        else if (currentMenuScreen == MENU_SCREEN_QTR && qtrConfigActive)
+        {
+            cycleQtrConfigBackward();
         }
         break;
 
@@ -896,14 +953,68 @@ void Robot::handleKeypadAction(KeypadAction action)
         {
             cycleStrategy();
         }
-        else if (currentMenuScreen == MENU_SCREEN_START_ROUTINE)
+        else if (currentMenuScreen == MENU_SCREEN_BATTERY)
         {
-            cycleStartRoutine();
+            if (!diagnosticsMotorTestActive)
+            {
+                enterDiagnosticsMotorTest();
+            }
+            else
+            {
+                cycleDiagnosticsMotorTest();
+            }
+        }
+        else if (diagnosticsMotorTestActive)
+        {
+            cycleDiagnosticsMotorTest();
+        }
+        else if (currentMenuScreen == MENU_SCREEN_QTR)
+        {
+            if (!qtrConfigActive)
+            {
+                enterQtrConfig();
+            }
+            else
+            {
+                cycleQtrConfig();
+            }
         }
         break;
 
     case KEYPAD_ACTION_NONE:
     default:
+        break;
+
+    case ACTION_BTN_MENU:
+        if (diagnosticsMotorTestActive)
+            exitDiagnosticsMotorTest();
+        if (qtrConfigActive)
+            exitQtrConfig();
+        if (currentMode == MODE_MENU)
+            cycleMenuScreen();
+        break;
+
+    case ACTION_BTN_CHANGE_SINGLE:
+        if (currentMenuScreen == MENU_SCREEN_SPEED)
+            cycleSpeedLevel();
+        else if (currentMenuScreen == MENU_SCREEN_STRATEGY)
+            cycleStrategy();
+        else if (currentMenuScreen == MENU_SCREEN_QTR && qtrConfigActive)
+            adjustQtrConfigLevel(1);
+        else if (diagnosticsMotorTestActive)
+            cycleDiagnosticsMotorTest();
+        break;
+
+    case ACTION_BTN_CHANGE_DOUBLE:
+        if (currentMenuScreen == MENU_SCREEN_BATTERY && !diagnosticsMotorTestActive)
+            enterDiagnosticsMotorTest();
+        else if (currentMenuScreen == MENU_SCREEN_QTR)
+        {
+            if (!qtrConfigActive)
+                enterQtrConfig();
+            else
+                cycleQtrConfig();
+        }
         break;
     }
 }
@@ -928,6 +1039,11 @@ SpeedConfig &Robot::getSpeedConfig()
 int *Robot::getIRValues()
 {
     return irSensors.getAllValues();
+}
+
+int *Robot::getQTRValues()
+{
+    return qtrSensors.getAllValues();
 }
 
 Display &Robot::getDisplay()
@@ -1004,11 +1120,6 @@ int Robot::getCurrentStrategy() const
     return currentStrategy;
 }
 
-int Robot::getCurrentStartRoutine() const
-{
-    return currentStartRoutine;
-}
-
 int Robot::getCurrentDirection() const
 {
     return currentMotorDirection;
@@ -1022,6 +1133,16 @@ int Robot::getCurrentLeftMotorPWM() const
 int Robot::getCurrentRightMotorPWM() const
 {
     return lastRightMotorPWM;
+}
+
+bool Robot::isDiagnosticsMotorTestActive() const
+{
+    return diagnosticsMotorTestActive;
+}
+
+int Robot::getDiagnosticsMotorTestSelection() const
+{
+    return diagnosticsMotorTestSelection;
 }
 
 float Robot::getBatteryVoltage()
@@ -1054,7 +1175,7 @@ float Robot::getBatteryVoltageFromRaw(int rawAdc)
 
     float vAdc = getBatteryAdcVoltageFromRaw(rawAdc);
     // float correctedAdc = vAdc - BATTERY_ADC_OFFSET_V;
-    float correctedAdc = vAdc + 0.12f; // Adjusted to match measured values better
+    float correctedAdc = vAdc + BATTERY_ADC_OFFSET_V; // Adjusted to match measured values better
     if (correctedAdc < 0.0f)
     {
         correctedAdc = 0.0f;
@@ -1155,6 +1276,63 @@ void Robot::cycleStrategyBackward()
     setStrategy((currentStrategy + STRATEGY_COUNT - 1) % STRATEGY_COUNT);
 }
 
+void Robot::enterDiagnosticsMotorTest()
+{
+    diagnosticsMotorTestActive = true;
+    diagnosticsMotorTestSelection = MOTOR_DIAG_FORWARD;
+}
+
+void Robot::exitDiagnosticsMotorTest()
+{
+    diagnosticsMotorTestActive = false;
+}
+
+void Robot::cycleDiagnosticsMotorTest()
+{
+    diagnosticsMotorTestSelection = (diagnosticsMotorTestSelection + 1) % MOTOR_DIAG_COUNT;
+}
+
+void Robot::cycleDiagnosticsMotorTestBackward()
+{
+    diagnosticsMotorTestSelection = (diagnosticsMotorTestSelection + MOTOR_DIAG_COUNT - 1) % MOTOR_DIAG_COUNT;
+}
+
+void Robot::updateBehavior_DiagnosticsMotorTest()
+{
+    if (paused)
+    {
+        motor.stop();
+        setMotorPWM(0, 0);
+        currentMotorDirection = DIRECTION_STOP;
+        return;
+    }
+    int testSpeed = 90;
+    switch (diagnosticsMotorTestSelection)
+    {
+    case MOTOR_DIAG_FORWARD:
+        motor.forward(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_FORWARD;
+        break;
+    case MOTOR_DIAG_BACKWARD:
+        motor.backward(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_BACKWARD;
+        break;
+    case MOTOR_DIAG_RIGHT:
+        motor.right(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_RIGHT;
+        break;
+    case MOTOR_DIAG_LEFT:
+    default:
+        motor.left(testSpeed);
+        setMotorPWM(testSpeed, testSpeed);
+        currentMotorDirection = DIRECTION_LEFT;
+        break;
+    }
+}
+
 void Robot::setStrategy(int strategy)
 {
     if (strategy >= 0 && strategy < STRATEGY_COUNT)
@@ -1168,20 +1346,38 @@ void Robot::cycleStrategy()
     setStrategy((currentStrategy + 1) % STRATEGY_COUNT);
 }
 
-void Robot::setStartRoutine(int startRoutine)
+// QTR Config Methods
+bool Robot::isQtrConfigActive() const { return qtrConfigActive; }
+int Robot::getQtrConfigSelection() const { return qtrConfigSelection; }
+bool Robot::isQtrEnabled() const { return qtrLineSensorsEnabled; }
+int Robot::getQtrThreshold() const { return qtrThreshold; }
+
+void Robot::enterQtrConfig()
 {
-    if (startRoutine >= 0 && startRoutine < START_ROUTINE_COUNT)
+    qtrConfigActive = true;
+    qtrConfigSelection = 0;
+}
+void Robot::exitQtrConfig() { qtrConfigActive = false; }
+void Robot::cycleQtrConfig() { qtrConfigSelection = (qtrConfigSelection + 1) % 3; }
+void Robot::cycleQtrConfigBackward() { qtrConfigSelection = (qtrConfigSelection + 2) % 3; }
+
+void Robot::adjustQtrConfigLevel(int direction)
+{
+    if (qtrConfigSelection == 0)
     {
-        currentStartRoutine = startRoutine;
+        // Toggle Enable/Disable
+        qtrLineSensorsEnabled = !qtrLineSensorsEnabled;
     }
-}
-
-void Robot::cycleStartRoutine()
-{
-    setStartRoutine((currentStartRoutine + 1) % START_ROUTINE_COUNT);
-}
-
-void Robot::cycleStartRoutineBackward()
-{
-    setStartRoutine((currentStartRoutine + START_ROUTINE_COUNT - 1) % START_ROUTINE_COUNT);
+    else if (qtrConfigSelection == 1)
+    {
+        // Adjust Threshold (e.g., +/- 10)
+        qtrThreshold += (direction * 10);
+        if (qtrThreshold < 0)
+            qtrThreshold = 0;
+    }
+    else if (qtrConfigSelection == 2)
+    {
+        // Option 2 is EXIT
+        exitQtrConfig();
+    }
 }
