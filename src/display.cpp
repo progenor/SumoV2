@@ -46,7 +46,7 @@ void Display::displayIR(int *irValues, int sensorCount)
 
     display.clearDisplay();
     display.setTextSize(2);
-    display.setCursor(32, 0);
+    display.setCursor(5, 24);
 
     for (uint8_t i = 0; i < sensorCount; i++)
     {
@@ -63,10 +63,12 @@ void Display::displayQTR(int *qtrValues, int sensorCount)
 
     display.clearDisplay();
     display.setTextSize(2);
-    display.setCursor(32, 0);
+    display.setCursor(26, 14);
 
     for (uint8_t i = 0; i < sensorCount; i++)
     {
+
+        display.setCursor(26, 14+i*20);
         char buffer[10];
         sprintf(buffer, "S%d: %d", i, qtrValues[i]);
         display.println(buffer);
