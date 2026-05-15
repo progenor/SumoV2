@@ -1,4 +1,5 @@
 #include "display.h"
+static const unsigned char PROGMEM image_Pin_arrow_right_bits[] = {0x04, 0x00, 0x06, 0x00, 0xff, 0x00, 0xff, 0x80, 0xff, 0x00, 0x06, 0x00, 0x04, 0x00};
 
 Display::Display()
     : display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, display_RESET),
@@ -56,22 +57,58 @@ void Display::displayIR(int *irValues, int sensorCount)
     display.display();
 }
 
-void Display::displayQTR(int *qtrValues, int sensorCount)
+void Display::displayQTR(int *qtrValues, int sensorCount, bool configActive, int configSelection, bool qtrEnabled, int qtrThreshold)
 {
     if (!shouldUpdate())
         return;
 
     display.clearDisplay();
-    display.setTextSize(2);
-    display.setCursor(26, 14);
+    display.setTextSize(1);
 
-    for (uint8_t i = 0; i < sensorCount; i++)
+    if (configActive)
     {
+        display.setCursor(0, 0);
+        display.print("QTR CONFIG");
 
-        display.setCursor(26, 14+i*20);
-        char buffer[10];
-        sprintf(buffer, "S%d: %d", i, qtrValues[i]);
-        display.println(buffer);
+        uint8_t y_pos[] = {16, 32, 48};
+
+        // State
+        if (configSelection == 0)
+            display.drawBitmap(15, y_pos[0] + 1, image_Pin_arrow_right_bits, 9, 7, 1);
+        display.setCursor(30, y_pos[0]);
+        display.print("State: ");
+        display.print(qtrEnabled ? "ON" : "OFF");
+
+        // Threshold
+        if (configSelection == 1)
+            display.drawBitmap(15, y_pos[1] + 1, image_Pin_arrow_right_bits, 9, 7, 1);
+        display.setCursor(30, y_pos[1]);
+        display.print("Thresh: ");
+        display.print(qtrThreshold);
+
+        // Exit
+        if (configSelection == 2)
+            display.drawBitmap(15, y_pos[2] + 1, image_Pin_arrow_right_bits, 9, 7, 1);
+        display.setCursor(30, y_pos[2]);
+        display.print("Exit");
+
+        // Preview values at bottom
+        display.setCursor(20, 56);
+        char buffer[32];
+        sprintf(buffer, "S0:%d S1:%d", qtrValues[0], qtrValues[1]);
+        display.print(buffer);
+    }
+    else
+    {
+        // Normal display
+        display.setTextSize(2);
+        for (uint8_t i = 0; i < sensorCount; i++)
+        {
+            display.setCursor(26, 14 + i * 20);
+            char buffer[10];
+            sprintf(buffer, "S%d: %d", i, qtrValues[i]);
+            display.println(buffer);
+        }
     }
     display.display();
 }
@@ -117,8 +154,6 @@ void Display::drawMainScreen(void)
     display.print("T.F.S Robotics");
     display.display();
 }
-
-static const unsigned char PROGMEM image_Pin_arrow_right_bits[] = {0x04, 0x00, 0x06, 0x00, 0xff, 0x00, 0xff, 0x80, 0xff, 0x00, 0x06, 0x00, 0x04, 0x00};
 
 const char *strategy_names[] = {"Sting", "Speed", "Run", "IMU"};
 

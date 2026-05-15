@@ -60,7 +60,10 @@ Robot::Robot()
       isBackingOffFromLine(false),
       lineBackoffStartMs(0),
       diagnosticsMotorTestActive(false),
-      diagnosticsMotorTestSelection(MOTOR_DIAG_FORWARD)
+      diagnosticsMotorTestSelection(MOTOR_DIAG_FORWARD),
+      qtrConfigActive(false),
+      qtrConfigSelection(0),
+      qtrThreshold(LINE_THRESHOLD)
 {
 }
 
@@ -815,7 +818,7 @@ void Robot::checkLineSensorsAndBackoff(int backoffDurationMs)
 #if ENABLE_QTR_LINE_SENSORS
     int *qtrValues = qtrSensors.getAllValues();
     qtrSensors.printAllValues();
-    bool lineDetected = (qtrValues[0] < LINE_THRESHOLD) || (qtrValues[1] < LINE_THRESHOLD);
+    bool lineDetected = (qtrValues[0] < qtrThreshold) || (qtrValues[1] < qtrThreshold);
     unsigned long nowMs = millis();
 
     // If a line is detected and we're not already backing off, start the backup
@@ -894,6 +897,11 @@ void Robot::handleKeypadAction(KeypadAction action)
             exitDiagnosticsMotorTest();
             break;
         }
+        if (qtrConfigActive)
+        {
+            adjustQtrConfigLevel(-1);
+            break;
+        }
         if (currentMode == MODE_MENU)
         {
             cycleMenuScreenBackward();
@@ -904,6 +912,11 @@ void Robot::handleKeypadAction(KeypadAction action)
         if (diagnosticsMotorTestActive)
         {
             exitDiagnosticsMotorTest();
+            break;
+        }
+        if (qtrConfigActive)
+        {
+            adjustQtrConfigLevel(1);
             break;
         }
         if (currentMode == MODE_MENU)
@@ -924,6 +937,10 @@ void Robot::handleKeypadAction(KeypadAction action)
         else if (diagnosticsMotorTestActive)
         {
             cycleDiagnosticsMotorTestBackward();
+        }
+        else if (currentMenuScreen == MENU_SCREEN_QTR && qtrConfigActive)
+        {
+            cycleQtrConfigBackward();
         }
         break;
 
@@ -950,6 +967,17 @@ void Robot::handleKeypadAction(KeypadAction action)
         else if (diagnosticsMotorTestActive)
         {
             cycleDiagnosticsMotorTest();
+        }
+        else if (currentMenuScreen == MENU_SCREEN_QTR)
+        {
+            if (!qtrConfigActive)
+            {
+                enterQtrConfig();
+            }
+            else
+            {
+                cycleQtrConfig();
+            }
         }
         break;
 
@@ -1284,4 +1312,29 @@ void Robot::setStrategy(int strategy)
 void Robot::cycleStrategy()
 {
     setStrategy((currentStrategy + 1) % STRATEGY_COUNT);
+}
+
+// QTR Config Methods
+bool Robot::isQtrConfigActive() const { return qtrConfigActive; }
+int Robot::getQtrConfigSelection() const { return qtrConfigSelection; }
+bool Robot::isQtrEnabled() const { return qtrLineSensorsEnabled; }
+int Robot::getQtrThreshold() const { return qtrThreshold; }
+
+void Robot::enterQtrConfig() { qtrConfigActive = true; qtrConfigSelection = 0; }
+void Robot::exitQtrConfig() { qtrConfigActive = false; }
+void Robot::cycleQtrConfig() { qtrConfigSelection = (qtrConfigSelection + 1) % 3; }
+void Robot::cycleQtrConfigBackward() { qtrConfigSelection = (qtrConfigSelection + 2) % 3; }
+
+void Robot::adjustQtrConfigLevel(int direction) {
+    if (qtrConfigSelection == 0) {
+        // Toggle Enable/Disable
+        qtrLineSensorsEnabled = !qtrLineSensorsEnabled;
+    } else if (qtrConfigSelection == 1) {
+        // Adjust Threshold (e.g., +/- 10)
+        qtrThreshold += (direction * 10);
+        if (qtrThreshold < 0) qtrThreshold = 0;
+    } else if (qtrConfigSelection == 2) {
+        // Option 2 is EXIT
+        exitQtrConfig();
+    }
 }
