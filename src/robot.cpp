@@ -57,6 +57,8 @@ Robot::Robot()
       imuSearchForwardPulse(false),
       stingRightCommitUntilMs(0),
       stingCommittedTurnDirection(1),
+      isBackingOffFromLine(false),
+      lineBackoffStartMs(0),
       diagnosticsMotorTestActive(false),
       diagnosticsMotorTestSelection(MOTOR_DIAG_FORWARD)
 {
@@ -136,7 +138,16 @@ void Robot::update()
 #endif
     }
 
-    updateBehavior();
+    // Check line sensors and back off if detected (works for all strategies)
+    if (qtrLineSensorsEnabled)
+    {
+        checkLineSensorsAndBackoff(200); // 200ms backoff duration
+    }
+    else
+    {
+        updateBehavior();
+    }
+
     updateBatteryBuzzer();
 
     if (currentMode != MODE_MENU)
@@ -803,6 +814,43 @@ void Robot::runIMUEdgeRecovery(int *qtrValues, unsigned long nowMs)
     beginIMUSearchPhase(nowMs);
 }
 
+void Robot::checkLineSensorsAndBackoff(int backoffDurationMs)
+{
+#if ENABLE_QTR_LINE_SENSORS
+    int *qtrValues = qtrSensors.getAllValues();
+    qtrSensors.printAllValues();
+    bool lineDetected = (qtrValues[0] < LINE_THRESHOLD) || (qtrValues[1] < LINE_THRESHOLD);
+    unsigned long nowMs = millis();
+
+    // If a line is detected and we're not already backing off, start the backup
+    if (lineDetected && !isBackingOffFromLine)
+    {
+        isBackingOffFromLine = true;
+        lineBackoffStartMs = nowMs;
+    }
+
+    // If we're in backup mode, continue backing off and check if time has elapsed
+    if (isBackingOffFromLine)
+    {
+        motor.backward(speedConfig.attack_speed);
+        currentMotorDirection = DIRECTION_BACKWARD;
+
+        unsigned long elapsedMs = nowMs - lineBackoffStartMs;
+        if (elapsedMs >= (unsigned long)backoffDurationMs)
+        {
+            // Backup duration complete, stop and clear the backup flag
+            motor.stop();
+            currentMotorDirection = DIRECTION_STOP;
+            isBackingOffFromLine = false;
+        }
+    }
+    else
+    {
+        updateBehavior();
+    }
+#endif
+}
+
 void Robot::updateBehavior()
 {
     if (currentStrategy != previousStrategy)
@@ -1066,7 +1114,7 @@ float Robot::getBatteryVoltageFromRaw(int rawAdc)
 
     float vAdc = getBatteryAdcVoltageFromRaw(rawAdc);
     // float correctedAdc = vAdc - BATTERY_ADC_OFFSET_V;
-    float correctedAdc = vAdc + 0.12f; // Adjusted to match measured values better
+    float correctedAdc = vAdc + 0.24f; // Adjusted to match measured values better
     if (correctedAdc < 0.0f)
     {
         correctedAdc = 0.0f;

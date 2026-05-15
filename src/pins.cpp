@@ -9,11 +9,6 @@ void setupPins()
         pinMode(IRPins[i], INPUT);
     }
 
-    for (size_t i = 0; i < sizeof(QTRPins) / sizeof(QTRPins[0]); i++)
-    {
-        pinMode(QTRPins[i], INPUT);
-    }
-
     pinMode(BATTERY_LEVEL_PIN, INPUT);
     pinMode(TEMP_MONITOR_PIN, INPUT);
 

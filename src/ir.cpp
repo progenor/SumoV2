@@ -19,23 +19,31 @@ void IRSensors::read()
     for (int i = 0; i < IRCount; i++)
     {
         int rawRead = digitalRead(IRPins[i]);
-        rawValues[i] = rawRead;
-
-        if (rawRead == sensorValues[i])
-        {
-            debounceCounter[i] = 0;
-        }
-        else
-        {
-            debounceCounter[i]++;
-            if (debounceCounter[i] >= DEBOUNCE_THRESHOLD)
-            {
-                sensorValues[i] = rawRead;
-                debounceCounter[i] = 0;
-            }
-        }
+        sensorValues[i] = rawRead;
     }
 }
+// void IRSensors::read()
+// {
+//     for (int i = 0; i < IRCount; i++)
+//     {
+//         int rawRead = digitalRead(IRPins[i]);
+//         rawValues[i] = rawRead;
+
+//         if (rawRead == sensorValues[i])
+//         {
+//             debounceCounter[i] = 0;
+//         }
+//         else
+//         {
+//             debounceCounter[i]++;
+//             if (debounceCounter[i] >= DEBOUNCE_THRESHOLD)
+//             {
+//                 sensorValues[i] = rawRead;
+//                 debounceCounter[i] = 0;
+//             }
+//         }
+//     }
+// }
 
 int IRSensors::getValue(int index)
 {
