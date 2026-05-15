@@ -26,6 +26,7 @@
 // Feature flags
 // Set to 1 when QTR line sensors are physically installed and wired.
 #define ENABLE_QTR_LINE_SENSORS 1
+#define LINE_THRESHOLD 150
 
 // TM1 temperature monitor conversion (10k NTC, B=3950)
 #define TEMP_NTC_PULLUP_VOLTAGE 5.0f

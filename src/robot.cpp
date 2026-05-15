@@ -143,8 +143,11 @@ void Robot::update()
     {
         checkLineSensorsAndBackoff(200); // 200ms backoff duration
     }
+    else
+    {
+        updateBehavior();
+    }
 
-    updateBehavior();
     updateBatteryBuzzer();
 
     if (currentMode != MODE_MENU)
@@ -815,7 +818,8 @@ void Robot::checkLineSensorsAndBackoff(int backoffDurationMs)
 {
 #if ENABLE_QTR_LINE_SENSORS
     int *qtrValues = qtrSensors.getAllValues();
-    bool lineDetected = (qtrValues[0] == 1) || (qtrValues[1] == 1);
+    qtrSensors.printAllValues();
+    bool lineDetected = (qtrValues[0] < LINE_THRESHOLD) || (qtrValues[1] < LINE_THRESHOLD);
     unsigned long nowMs = millis();
 
     // If a line is detected and we're not already backing off, start the backup
@@ -839,6 +843,10 @@ void Robot::checkLineSensorsAndBackoff(int backoffDurationMs)
             currentMotorDirection = DIRECTION_STOP;
             isBackingOffFromLine = false;
         }
+    }
+    else
+    {
+        updateBehavior();
     }
 #endif
 }
