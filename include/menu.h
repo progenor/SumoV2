@@ -40,11 +40,11 @@ struct SpeedPreset
 // Preset configurations
 static const SpeedPreset SPEED_PRESETS[SPEED_LEVEL_COUNT] = {
     // LOW
-    {60, 40, 40, 10},
+    {60, 40, 40, 50},
     // MEDIUM
-    {128, 50, 80, 15},
+    {128, 50, 100, 50},
     // HIGH
-    {255, 50, 100, 25}};
+    {255, 50, 100, 50}};
 
 // Strategy enumeration
 enum Strategy

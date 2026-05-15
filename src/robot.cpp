@@ -275,19 +275,23 @@ void Robot::updateBatteryBuzzer()
 
 void Robot::updateBehavior_Speed()
 {
-    if (paused)
-    {
-        motor.stop();
-        currentMotorDirection = DIRECTION_STOP;
-        return;
-    }
 
     int *irValues = irSensors.getAllValues();
 
-    if (irValues[1] == 1)
+    if (irValues[2] == 1)
     {
         motor.forward(speedConfig.attack_speed);
         currentMotorDirection = DIRECTION_FORWARD;
+    }
+    else if (irValues[1] == 1 && irValues[2] == 1)
+    {
+        motor.left(speedConfig.turn_speed_gentle);
+        currentMotorDirection = DIRECTION_LEFT;
+    }
+    else if (irValues[2] == 1 && irValues[3] == 1)
+    {
+        motor.right(speedConfig.turn_speed_gentle);
+        currentMotorDirection = DIRECTION_RIGHT;
     }
     else if (irValues[0] == 1)
     {
@@ -308,26 +312,11 @@ void Robot::updateBehavior_Speed()
 
 void Robot::updateBehavior_Sting()
 {
-    if (paused)
-    {
-        motor.stop();
-        currentMotorDirection = DIRECTION_STOP;
-        stingRightCommitUntilMs = 0;
-        stingCommittedTurnDirection = 1;
-        return;
-    }
 
     unsigned long nowMs = millis();
     int *irValues = irSensors.getAllValues();
 
-    if (irValues[1] == 1)
-    {
-        stingRightCommitUntilMs = 0;
-        stingCommittedTurnDirection = 1;
-        motor.forward(speedConfig.attack_speed);
-        currentMotorDirection = DIRECTION_FORWARD;
-    }
-    else if (nowMs < stingRightCommitUntilMs)
+    if (nowMs < stingRightCommitUntilMs)
     {
         if (stingCommittedTurnDirection < 0)
         {
@@ -340,6 +329,13 @@ void Robot::updateBehavior_Sting()
             currentMotorDirection = DIRECTION_RIGHT;
         }
     }
+    else if (irValues[1] == 1 || irValues[2] == 1 || irValues[3] == 1)
+    {
+        stingRightCommitUntilMs = 0;
+        stingCommittedTurnDirection = 1;
+        motor.forward(speedConfig.attack_speed);
+        currentMotorDirection = DIRECTION_FORWARD;
+    }
     else if (irValues[0] == 1)
     {
         stingCommittedTurnDirection = -1;
@@ -347,7 +343,7 @@ void Robot::updateBehavior_Sting()
         motor.left(speedConfig.turn_speed_moderate);
         currentMotorDirection = DIRECTION_LEFT;
     }
-    else if (irValues[2] == 1)
+    else if (irValues[4] == 1)
     {
         stingCommittedTurnDirection = 1;
         stingRightCommitUntilMs = nowMs + STING_TURN_COMMIT_MS;
