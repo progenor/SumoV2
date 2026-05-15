@@ -1,4 +1,5 @@
 #include "display.h"
+static const unsigned char PROGMEM image_Pin_arrow_right_bits[] = {0x04, 0x00, 0x06, 0x00, 0xff, 0x00, 0xff, 0x80, 0xff, 0x00, 0x06, 0x00, 0x04, 0x00};
 
 Display::Display()
     : display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, display_RESET),
@@ -92,7 +93,7 @@ void Display::displayQTR(int *qtrValues, int sensorCount, bool configActive, int
         display.print("Exit");
 
         // Preview values at bottom
-        display.setCursor(0, 56);
+        display.setCursor(20, 56);
         char buffer[32];
         sprintf(buffer, "S0:%d S1:%d", qtrValues[0], qtrValues[1]);
         display.print(buffer);
@@ -153,8 +154,6 @@ void Display::drawMainScreen(void)
     display.print("T.F.S Robotics");
     display.display();
 }
-
-static const unsigned char PROGMEM image_Pin_arrow_right_bits[] = {0x04, 0x00, 0x06, 0x00, 0xff, 0x00, 0xff, 0x80, 0xff, 0x00, 0x06, 0x00, 0x04, 0x00};
 
 const char *strategy_names[] = {"Sting", "Speed", "Run", "IMU"};
 
