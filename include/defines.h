@@ -88,6 +88,9 @@ static const uint8_t INPUT_IR6_PIN = EXP_PIN_1;
 static const uint8_t INPUT_CS_1_PIN = EXP_PIN_6;
 static const uint8_t INPUT_CS_2_PIN = EXP_PIN_7;
 
+// Redundancy Menu button
+#define REDUNDANCY_BTN_MENU_PIN 20
+
 // Vim-style keypad bindings (4 keys)
 // h: left, j: down, k: up, l: right
 static const uint8_t KEYPAD_VIM_H_PIN = KEYPAD_KEY_1_PIN;

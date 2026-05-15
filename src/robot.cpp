@@ -984,6 +984,38 @@ void Robot::handleKeypadAction(KeypadAction action)
     case KEYPAD_ACTION_NONE:
     default:
         break;
+
+    case ACTION_BTN_MENU:
+        if (diagnosticsMotorTestActive)
+            exitDiagnosticsMotorTest();
+        if (qtrConfigActive)
+            exitQtrConfig();
+        if (currentMode == MODE_MENU)
+            cycleMenuScreen();
+        break;
+
+    case ACTION_BTN_CHANGE_SINGLE:
+        if (currentMenuScreen == MENU_SCREEN_SPEED)
+            cycleSpeedLevel();
+        else if (currentMenuScreen == MENU_SCREEN_STRATEGY)
+            cycleStrategy();
+        else if (currentMenuScreen == MENU_SCREEN_QTR && qtrConfigActive)
+            adjustQtrConfigLevel(1);
+        else if (diagnosticsMotorTestActive)
+            cycleDiagnosticsMotorTest();
+        break;
+
+    case ACTION_BTN_CHANGE_DOUBLE:
+        if (currentMenuScreen == MENU_SCREEN_BATTERY && !diagnosticsMotorTestActive)
+            enterDiagnosticsMotorTest();
+        else if (currentMenuScreen == MENU_SCREEN_QTR)
+        {
+            if (!qtrConfigActive)
+                enterQtrConfig();
+            else
+                cycleQtrConfig();
+        }
+        break;
     }
 }
 
@@ -1320,20 +1352,31 @@ int Robot::getQtrConfigSelection() const { return qtrConfigSelection; }
 bool Robot::isQtrEnabled() const { return qtrLineSensorsEnabled; }
 int Robot::getQtrThreshold() const { return qtrThreshold; }
 
-void Robot::enterQtrConfig() { qtrConfigActive = true; qtrConfigSelection = 0; }
+void Robot::enterQtrConfig()
+{
+    qtrConfigActive = true;
+    qtrConfigSelection = 0;
+}
 void Robot::exitQtrConfig() { qtrConfigActive = false; }
 void Robot::cycleQtrConfig() { qtrConfigSelection = (qtrConfigSelection + 1) % 3; }
 void Robot::cycleQtrConfigBackward() { qtrConfigSelection = (qtrConfigSelection + 2) % 3; }
 
-void Robot::adjustQtrConfigLevel(int direction) {
-    if (qtrConfigSelection == 0) {
+void Robot::adjustQtrConfigLevel(int direction)
+{
+    if (qtrConfigSelection == 0)
+    {
         // Toggle Enable/Disable
         qtrLineSensorsEnabled = !qtrLineSensorsEnabled;
-    } else if (qtrConfigSelection == 1) {
+    }
+    else if (qtrConfigSelection == 1)
+    {
         // Adjust Threshold (e.g., +/- 10)
         qtrThreshold += (direction * 10);
-        if (qtrThreshold < 0) qtrThreshold = 0;
-    } else if (qtrConfigSelection == 2) {
+        if (qtrThreshold < 0)
+            qtrThreshold = 0;
+    }
+    else if (qtrConfigSelection == 2)
+    {
         // Option 2 is EXIT
         exitQtrConfig();
     }
