@@ -988,6 +988,27 @@ void Robot::handleKeypadAction(KeypadAction action)
     case KEYPAD_ACTION_NONE:
     default:
         break;
+
+    case ACTION_BTN_MENU:
+        if (diagnosticsMotorTestActive) exitDiagnosticsMotorTest();
+        if (qtrConfigActive) exitQtrConfig();
+        if (currentMode == MODE_MENU) cycleMenuScreen();
+        break;
+
+    case ACTION_BTN_CHANGE_SINGLE:
+        if (currentMenuScreen == MENU_SCREEN_SPEED) cycleSpeedLevel();
+        else if (currentMenuScreen == MENU_SCREEN_STRATEGY) cycleStrategy();
+        else if (currentMenuScreen == MENU_SCREEN_QTR && qtrConfigActive) adjustQtrConfigLevel(1);
+        else if (diagnosticsMotorTestActive) cycleDiagnosticsMotorTest();
+        break;
+
+    case ACTION_BTN_CHANGE_DOUBLE:
+        if (currentMenuScreen == MENU_SCREEN_BATTERY && !diagnosticsMotorTestActive) enterDiagnosticsMotorTest();
+        else if (currentMenuScreen == MENU_SCREEN_QTR) {
+            if (!qtrConfigActive) enterQtrConfig();
+            else cycleQtrConfig();
+        }
+        break;
     }
 }
 
