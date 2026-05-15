@@ -38,7 +38,7 @@
 
 // Battery monitor calibration factor.
 // Two-point fit from measured values:
-#define BATTERY_ADC_OFFSET_V 0.28f
+#define BATTERY_ADC_OFFSET_V 0.505f
 
 // --- Speed Configuration Structure ---
 // These are runtime-mutable values, can be changed from menu

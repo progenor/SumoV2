@@ -211,9 +211,9 @@ void Robot::stopBuzzerAlarm()
 
 void Robot::updateBatteryBuzzer()
 {
-    const float usbFloorV = 6.0f;
-    const float warningThresholdV = 12.2f;
-    const float criticalThresholdV = 11.3f;
+    const float usbFloorV = 10.0f;
+    const float warningThresholdV = 22.0f;
+    const float criticalThresholdV = 20.0f;
 
     float currentBatteryV = getBatteryVoltage();
 
