@@ -38,9 +38,7 @@
 
 // Battery monitor calibration factor.
 // Two-point fit from measured values:
-// 12.6V @ 2.62V ADC and 11.1V @ 2.40V ADC.
-// This behaves like an ADC bias of ~0.715V before divider scaling.
-#define BATTERY_ADC_OFFSET_V 0.715f
+#define BATTERY_ADC_OFFSET_V 0.28f
 
 // --- Speed Configuration Structure ---
 // These are runtime-mutable values, can be changed from menu
