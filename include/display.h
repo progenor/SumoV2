@@ -37,6 +37,9 @@ public:
     // Display IR sensor bars (0-1 digital values)
     void displayIR(int *irValues, int sensorCount);
 
+    // Display QTR sensor values
+    void displayQTR(int *qtrValues, int sensorCount);
+
     // Throttled display update (respects DISPLAY_REFRESH_MS)
     bool shouldUpdate();
 

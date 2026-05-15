@@ -985,6 +985,11 @@ int *Robot::getIRValues()
     return irSensors.getAllValues();
 }
 
+int *Robot::getQTRValues()
+{
+    return qtrSensors.getAllValues();
+}
+
 Display &Robot::getDisplay()
 {
     return display;

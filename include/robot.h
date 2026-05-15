@@ -24,6 +24,7 @@ public:
 
     SpeedConfig &getSpeedConfig();
     int *getIRValues();
+    int *getQTRValues();
     Display &getDisplay();
     Motor &getMotor();
 

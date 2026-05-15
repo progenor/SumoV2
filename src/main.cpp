@@ -31,6 +31,9 @@ static void drawMenuScreen()
     case MENU_SCREEN_IR:
         robot.getDisplay().displayIR(robot.getIRValues(), IRCount);
         break;
+    case MENU_SCREEN_QTR:
+        robot.getDisplay().displayQTR(robot.getQTRValues(), QTR_COUNT);
+        break;
     case MENU_SCREEN_STRATEGY:
         robot.getDisplay().drawStrategySelectorScreen(robot.getCurrentStrategy());
         break;

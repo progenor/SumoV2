@@ -42,26 +42,33 @@ void Display::clear()
 void Display::displayIR(int *irValues, int sensorCount)
 {
     if (!shouldUpdate())
-        return; // Throttle updates
+        return;
 
     display.clearDisplay();
-    uint8_t bar_width = SCREEN_WIDTH / sensorCount;
-    if (bar_width < 2)
-        bar_width = 2;
+    display.setTextSize(2);
+    display.setCursor(0, 0);
 
     for (uint8_t i = 0; i < sensorCount; i++)
     {
-        int ir = irValues[i];
+        display.print(irValues[i]);
+    }
+    display.display();
+}
 
-        // If sensor reads 1 (HIGH), draw full height; else 0
-        uint8_t bar_height = (ir == 1) ? SCREEN_HEIGHT : 0;
-        uint8_t x = i * bar_width;
-        uint8_t y = SCREEN_HEIGHT - bar_height;
+void Display::displayQTR(int *qtrValues, int sensorCount)
+{
+    if (!shouldUpdate())
+        return;
 
-        if (bar_height > 0)
-        {
-            display.fillRect(x, y, bar_width - 1, bar_height, SSD1306_WHITE);
-        }
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+
+    for (uint8_t i = 0; i < sensorCount; i++)
+    {
+        char buffer[10];
+        sprintf(buffer, "S%d: %d", i, qtrValues[i]);
+        display.println(buffer);
     }
     display.display();
 }
