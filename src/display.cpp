@@ -46,11 +46,12 @@ void Display::displayIR(int *irValues, int sensorCount)
 
     display.clearDisplay();
     display.setTextSize(2);
-    display.setCursor(0, 0);
+    display.setCursor(32, 0);
 
     for (uint8_t i = 0; i < sensorCount; i++)
     {
         display.print(irValues[i]);
+        display.print(" ");
     }
     display.display();
 }
@@ -61,8 +62,8 @@ void Display::displayQTR(int *qtrValues, int sensorCount)
         return;
 
     display.clearDisplay();
-    display.setTextSize(1);
-    display.setCursor(0, 0);
+    display.setTextSize(2);
+    display.setCursor(32, 0);
 
     for (uint8_t i = 0; i < sensorCount; i++)
     {
