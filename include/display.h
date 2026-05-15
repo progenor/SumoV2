@@ -38,7 +38,7 @@ public:
     void displayIR(int *irValues, int sensorCount);
 
     // Display QTR sensor values
-    void displayQTR(int *qtrValues, int sensorCount);
+    void displayQTR(int *qtrValues, int sensorCount, bool configActive, int configSelection, bool qtrEnabled, int qtrThreshold);
 
     // Throttled display update (respects DISPLAY_REFRESH_MS)
     bool shouldUpdate();

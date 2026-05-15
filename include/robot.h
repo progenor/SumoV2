@@ -52,6 +52,17 @@ public:
     bool isDiagnosticsMotorTestActive() const;
     int getDiagnosticsMotorTestSelection() const;
 
+    // QTR Config
+    bool isQtrConfigActive() const;
+    int getQtrConfigSelection() const;
+    void enterQtrConfig();
+    void exitQtrConfig();
+    void cycleQtrConfig();
+    void cycleQtrConfigBackward();
+    void adjustQtrConfigLevel(int direction);
+    bool isQtrEnabled() const;
+    int getQtrThreshold() const;
+
     void handleKeypadAction(KeypadAction action);
 
     float getBatteryVoltage();
@@ -141,6 +152,10 @@ private:
 
     bool diagnosticsMotorTestActive;
     int diagnosticsMotorTestSelection;
+
+    bool qtrConfigActive;
+    int qtrConfigSelection;
+    int qtrThreshold;
 
     void updateBehavior();
     void updateBehavior_Speed();
